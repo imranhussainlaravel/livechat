@@ -3,82 +3,138 @@
 namespace Src\Api\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Src\Database\Models\Agent;
-use Src\Agent\Heartbeat\Heartbeat;
-use Src\Core\ConversationEngine\ConversationEngine;
-use Src\Core\MessageTimeline\MessageTimeline;
+use Illuminate\Routing\Controller;
+use Src\Database\Models\Conversation;
+use Src\Database\Models\Message;
+use Src\Database\Models\User;
+use Src\Assignment\QueueManager\UseCases\AcceptConversation;
+use Src\Core\ConversationEngine\UseCases\TransitionConversationState;
+use Src\Events\EventBus\MessageSent;
+use Src\Events\EventBus\ConversationStateUpdated;
 
-class AgentController extends ApiController
+class AgentController extends Controller
 {
     /**
-     * POST /api/v1/agent/login
+     * GET /agent/conversations?state=PENDING
      */
-    public function login(Request $request)
+    public function index(Request $request)
     {
-        $request->validate([
-            'email'    => 'required|email',
-            'password' => 'required|string',
+        $state = $request->query('state', 'PENDING');
+
+        $conversations = Conversation::where('state', $state)
+            ->with(['visitorSession'])
+            ->orderBy('updated_at', 'asc')
+            ->paginate(15);
+
+        return response()->json($conversations);
+    }
+
+    /**
+     * POST /agent/conversation/:id/accept
+     */
+    public function accept(Request $request, $id, AcceptConversation $acceptCase)
+    {
+        $validated = $request->validate([
+            'agent_id' => 'required|exists:users,id',
         ]);
 
-        $agent = Agent::where('email', $request->email)->first();
+        try {
+            // This UseCase enforces deterministic DB locked assignment rules
+            $conversation = $acceptCase->execute($id, $validated['agent_id']);
 
-        if (! $agent || ! Hash::check($request->password, $agent->password)) {
-            return $this->error('Invalid credentials', 401);
+            ConversationStateUpdated::dispatch($conversation);
+
+            return response()->json([
+                'success' => true,
+                'conversation' => $conversation
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 409); // 409 Conflict logic
+        }
+    }
+
+    /**
+     * POST /agent/conversation/:id/message
+     */
+    public function message(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'agent_id' => 'required|exists:users,id',
+            'content'  => 'required|string',
+        ]);
+
+        $conversation = Conversation::findOrFail($id);
+
+        if ($conversation->state !== 'ACTIVE' && $conversation->state !== 'ESCALATED') {
+            return response()->json(['error' => 'Conversation is not active.'], 403);
         }
 
-        $agent->update(['status' => 'online', 'last_activity_at' => now()]);
-        $token = $agent->createToken('agent-token')->plainTextToken;
+        if ($conversation->assigned_agent_id != $validated['agent_id']) {
+            return response()->json(['error' => 'You do not own this conversation.'], 403);
+        }
 
-        return $this->success([
-            'agent' => $agent->only(['id', 'name', 'email', 'status']),
-            'token' => $token,
+        $message = Message::create([
+            'conversation_id' => $conversation->id,
+            'sender_type' => 'AGENT',
+            'sender_id' => $validated['agent_id'],
+            'content' => $validated['content'],
+        ]);
+
+        $conversation->touch();
+
+        MessageSent::dispatch($message);
+
+        return response()->json([
+            'success' => true,
+            'message' => $message
+        ], 201);
+    }
+
+    /**
+     * POST /agent/conversation/:id/close
+     */
+    public function close(Request $request, $id, TransitionConversationState $transitioner)
+    {
+        $validated = $request->validate([
+            'agent_id' => 'required|exists:users,id',
+        ]);
+
+        $conversation = Conversation::findOrFail($id);
+
+        if ($conversation->assigned_agent_id != $validated['agent_id']) {
+            return response()->json(['error' => 'You do not own this conversation.'], 403);
+        }
+
+        // Deterministic Transition
+        $transitioner->execute($conversation, 'CLOSED');
+
+        ConversationStateUpdated::dispatch($conversation);
+
+        return response()->json([
+            'success' => true,
+            'state' => $conversation->state
         ]);
     }
 
     /**
-     * POST /api/v1/agent/heartbeat
+     * POST /agent/heartbeat
      */
-    public function heartbeat(Request $request, Heartbeat $heartbeat)
+    public function heartbeat(Request $request)
     {
-        $heartbeat->ping($request->user()->id);
-        return $this->success(null, 'pong');
-    }
-
-    /**
-     * POST /api/v1/agent/status
-     */
-    public function status(Request $request)
-    {
-        $request->validate(['status' => 'required|in:online,away,offline']);
-        $agent = $request->user();
-        $agent->update(['status' => $request->status, 'last_activity_at' => now()]);
-        return $this->success($agent->only(['id', 'status']));
-    }
-
-    /**
-     * POST /api/v1/agent/conversations/{id}/messages
-     */
-    public function sendMessage(Request $request, int $conversationId, MessageTimeline $timeline)
-    {
-        $request->validate(['body' => 'required|string']);
-
-        $message = $timeline->append([
-            'conversation_id' => $conversationId,
-            'sender_type'     => 'agent',
-            'sender_id'       => $request->user()->id,
-            'body'            => $request->body,
+        $validated = $request->validate([
+            'agent_id' => 'required|exists:users,id',
         ]);
 
-        return $this->created($message);
-    }
+        // Instead of pure memory, this writes standard heartbeat rules directly to DB to adhere to architecture rules.
+        $user = User::findOrFail($validated['agent_id']);
+        if ($user->role !== 'agent') {
+            return response()->json(['error' => 'Not an agent'], 403);
+        }
 
-    /**
-     * POST /api/v1/agent/conversations/{id}/close
-     */
-    public function closeConversation(int $conversationId, ConversationEngine $engine)
-    {
-        $conversation = $engine->close($conversationId);
-        return $this->success($conversation);
+        $user->status = 'online';
+        $user->updated_at = now(); // the actual heartbeat tick
+        $user->save();
+
+        return response()->json(['success' => true, 'status' => $user->status]);
     }
 }

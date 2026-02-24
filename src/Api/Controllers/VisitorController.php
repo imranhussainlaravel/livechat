@@ -3,57 +3,96 @@
 namespace Src\Api\Controllers;
 
 use Illuminate\Http\Request;
-use Src\Channel\WebsiteWidgetAdapter\WebsiteWidgetAdapter;
-use Src\Core\MessageTimeline\MessageTimeline;
+use Illuminate\Routing\Controller;
+use Illuminate\Support\Str;
+use Src\Database\Models\VisitorSession;
+use Src\Database\Models\Conversation;
+use Src\Database\Models\Message;
+use Src\Events\EventBus\MessageSent;
+use Src\Events\EventBus\ConversationStateUpdated;
 
-class VisitorController extends ApiController
+class VisitorController extends Controller
 {
-    public function __construct(private readonly WebsiteWidgetAdapter $widget) {}
-
     /**
-     * POST /api/v1/visitor/session
+     * POST /chat/start
      */
-    public function initSession(Request $request)
+    public function start(Request $request)
     {
-        $request->validate(['session_token' => 'required|string|uuid']);
-        return $this->success($this->widget->initSession($request->session_token));
-    }
-
-    /**
-     * POST /api/v1/visitor/conversations
-     */
-    public function startConversation(Request $request)
-    {
-        $request->validate([
-            'visitor_id' => 'required|integer|exists:visitors,id',
-            'subject'    => 'nullable|string|max:255',
+        $validated = $request->validate([
+            'visitor_name' => 'nullable|string',
+            'visitor_email' => 'nullable|email',
+            'queue' => 'nullable|string',
         ]);
 
-        return $this->created(
-            $this->widget->startConversation($request->visitor_id, $request->subject)
-        );
-    }
-
-    /**
-     * POST /api/v1/visitor/conversations/{id}/messages
-     */
-    public function sendMessage(Request $request, int $conversationId)
-    {
-        $request->validate([
-            'visitor_id' => 'required|integer|exists:visitors,id',
-            'body'       => 'required|string',
+        // Create Session
+        $session = VisitorSession::create([
+            'session_id' => Str::uuid()->toString(),
+            'visitor_name' => $validated['visitor_name'] ?? 'Guest',
+            'visitor_email' => $validated['visitor_email'] ?? null,
+            'metadata' => $request->header('User-Agent'),
+            'last_activity_at' => now(),
         ]);
 
-        return $this->created(
-            $this->widget->sendMessage($conversationId, $request->visitor_id, $request->body)
-        );
+        // Create Conversation (Starts as NEW)
+        $conversation = Conversation::create([
+            'session_id' => $session->session_id,
+            'queue' => $validated['queue'] ?? 'default',
+            'state' => 'NEW',
+        ]);
+
+        // Let's transition it to PENDING automatically so it shows in Queue
+        // In a real scenario, this might happen after a bot interaction
+        $conversation->state = 'PENDING';
+        $conversation->save();
+
+        ConversationStateUpdated::dispatch($conversation);
+
+        return response()->json([
+            'success' => true,
+            'conversation_id' => $conversation->id,
+            'session_id' => $session->session_id,
+            'state' => $conversation->state,
+        ], 201);
     }
 
     /**
-     * GET /api/v1/visitor/conversations/{id}/messages
+     * POST /chat/:id/message
      */
-    public function messages(int $conversationId, MessageTimeline $timeline)
+    public function message(Request $request, $id)
     {
-        return $this->success($timeline->recent($conversationId));
+        $validated = $request->validate([
+            'session_id' => 'required|string',
+            'content' => 'required|string',
+        ]);
+
+        $conversation = Conversation::where('id', $id)
+            ->where('session_id', $validated['session_id'])
+            ->firstOrFail();
+
+        // Must be actively participating in conversation to send message
+        if (in_array($conversation->state, ['CLOSED', 'NEW'])) {
+            return response()->json(['error' => 'Cannot send message to this conversation state.'], 403);
+        }
+
+        $message = Message::create([
+            'conversation_id' => $conversation->id,
+            'sender_type' => 'USER',
+            'sender_id' => null, // We map by session instead
+            'content' => $validated['content'],
+        ]);
+
+        // Update Session Activity
+        $conversation->visitorSession()->update(['last_activity_at' => now()]);
+
+        // Touch the conversation's updated_at required for SLA engine to reset timers properly
+        $conversation->touch();
+
+        // Broadcast Event
+        MessageSent::dispatch($message);
+
+        return response()->json([
+            'success' => true,
+            'message' => $message
+        ], 201);
     }
 }
