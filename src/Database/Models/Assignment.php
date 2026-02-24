@@ -4,22 +4,27 @@ namespace Src\Database\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class SlaLog extends Model
+class Assignment extends Model
 {
     protected $fillable = [
         'conversation_id',
-        'breach_type',
-        'triggered_at',
+        'agent_id',
+        'assigned_at',
     ];
 
-    public $timestamps = false;
+    public $timestamps = false; // assigned_at managed manually
 
     protected $casts = [
-        'triggered_at' => 'datetime',
+        'assigned_at' => 'datetime',
     ];
 
     public function conversation()
     {
         return $this->belongsTo(Conversation::class);
+    }
+
+    public function agent()
+    {
+        return $this->belongsTo(User::class, 'agent_id');
     }
 }

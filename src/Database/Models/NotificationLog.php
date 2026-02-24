@@ -6,12 +6,27 @@ use Illuminate\Database\Eloquent\Model;
 
 class NotificationLog extends Model
 {
-    protected $fillable = ['channel', 'recipient', 'message', 'status', 'metadata'];
+    protected $fillable = [
+        'agent_id',
+        'conversation_id',
+        'level',
+        'status',
+        'sent_at',
+    ];
 
-    protected function casts(): array
+    public $timestamps = false;
+    
+    protected $casts = [
+        'sent_at' => 'datetime',
+    ];
+
+    public function agent()
     {
-        return [
-            'metadata' => 'array',
-        ];
+        return $this->belongsTo(User::class, 'agent_id');
+    }
+
+    public function conversation()
+    {
+        return $this->belongsTo(Conversation::class);
     }
 }

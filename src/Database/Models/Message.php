@@ -10,17 +10,8 @@ class Message extends Model
         'conversation_id',
         'sender_type',
         'sender_id',
-        'type',
-        'body',
-        'metadata',
+        'content',
     ];
-
-    protected function casts(): array
-    {
-        return [
-            'metadata' => 'array',
-        ];
-    }
 
     public function conversation()
     {

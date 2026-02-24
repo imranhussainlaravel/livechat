@@ -3,51 +3,36 @@
 namespace Src\Database\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Src\Core\StateMachine\Exceptions\InvalidTransitionException;
 
 class Conversation extends Model
 {
     protected $fillable = [
-        'visitor_id',
-        'current_agent_id',
-        'queue_id',
+        'session_id',
+        'queue',
         'state',
-        'priority',
-        'sla_status',
-        'subject',
-        'metadata',
-        'first_response_at',
-        'resolved_at',
+        'assigned_agent_id',
+        'sla_state',
     ];
 
-    protected function casts(): array
+    public function visitorSession()
     {
-        return [
-            'metadata'          => 'array',
-            'first_response_at' => 'datetime',
-            'resolved_at'       => 'datetime',
-        ];
-    }
-
-    // ── Relationships ──
-
-    public function visitor()
-    {
-        return $this->belongsTo(Visitor::class);
+        return $this->belongsTo(VisitorSession::class, 'session_id', 'session_id');
     }
 
     public function agent()
     {
-        return $this->belongsTo(Agent::class, 'current_agent_id');
-    }
-
-    public function queue()
-    {
-        return $this->belongsTo(Queue::class);
+        return $this->belongsTo(User::class, 'assigned_agent_id');
     }
 
     public function messages()
     {
-        return $this->hasMany(Message::class)->orderBy('created_at');
+        return $this->hasMany(Message::class);
+    }
+
+    public function assignments()
+    {
+        return $this->hasMany(Assignment::class);
     }
 
     public function slaLogs()
