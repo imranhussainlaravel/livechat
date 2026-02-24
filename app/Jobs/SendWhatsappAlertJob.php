@@ -8,8 +8,8 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
-use Src\Database\Models\Conversation;
-use Src\Database\Models\NotificationLog;
+use App\Models\Conversation;
+use App\Models\NotificationLog;
 
 class SendWhatsappAlertJob implements ShouldQueue
 {

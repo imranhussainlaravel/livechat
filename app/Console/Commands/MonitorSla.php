@@ -3,8 +3,8 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use Src\Database\Models\Conversation;
-use Src\SLA\EscalationEngine\UseCases\CheckConversationSla;
+use App\Models\Conversation;
+use App\Services\CheckConversationSla;
 
 class MonitorSla extends Command
 {

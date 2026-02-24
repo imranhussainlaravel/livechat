@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use Src\Agent\Heartbeat\UseCases\CheckOfflineAgents;
+use App\Services\CheckOfflineAgents;
 
 class CheckAgentHeartbeat extends Command
 {
