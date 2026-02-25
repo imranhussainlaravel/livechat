@@ -10,9 +10,11 @@ use App\Http\Resources\MessageResource;
 use App\DTOs\SendMessageDTO;
 use App\DTOs\StartChatDTO;
 use App\Enums\MessageSenderType;
+use App\Events\TypingIndicator;
 use App\Repositories\Contracts\MessageRepositoryInterface;
 use App\Services\ChatService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class ChatController extends Controller
 {
@@ -71,5 +73,26 @@ class ChatController extends Controller
                 'total'        => $messages->total(),
             ],
         ]);
+    }
+
+    /**
+     * POST /api/chat/{id}/typing — Visitor broadcasts typing indicator.
+     */
+    public function typing(Request $request, int $id): JsonResponse
+    {
+        $request->validate([
+            'is_typing'    => 'required|boolean',
+            'visitor_name' => 'nullable|string|max:255',
+        ]);
+
+        event(new TypingIndicator(
+            chatId: $id,
+            userId: 0,
+            userName: $request->input('visitor_name', 'Visitor'),
+            senderType: 'visitor',
+            isTyping: $request->boolean('is_typing'),
+        ));
+
+        return response()->json(['message' => 'OK']);
     }
 }

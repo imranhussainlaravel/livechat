@@ -18,6 +18,7 @@ Route::prefix('chat')->group(function () {
     Route::post('/start',          [ChatController::class, 'start']);
     Route::post('/{id}/send',      [ChatController::class, 'send']);
     Route::get('/{id}/messages',   [ChatController::class, 'messages']);
+    Route::post('/{id}/typing',    [ChatController::class, 'typing']);
 });
 
 /*
@@ -26,7 +27,8 @@ Route::prefix('chat')->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::prefix('auth')->group(function () {
-    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/login', [AuthController::class, 'login'])
+        ->middleware('throttle:5,1'); // 5 attempts per minute per IP
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
@@ -43,11 +45,20 @@ Route::prefix('agent')
     ->middleware(['auth:sanctum', 'role.agent'])
     ->group(function () {
         Route::get('/chats',                [AgentController::class, 'chats']);
+        Route::get('/chat/{id}',            [AgentController::class, 'show']);
         Route::post('/chat/{id}/accept',    [AgentController::class, 'accept']);
         Route::post('/chat/{id}/message',   [AgentController::class, 'message']);
         Route::post('/chat/{id}/transfer',  [AgentController::class, 'transfer']);
         Route::post('/chat/{id}/close',     [AgentController::class, 'close']);
+        Route::patch('/chat/{id}/status',   [AgentController::class, 'updateChatStatus']);
+        Route::post('/chat/{id}/visitor-note', [AgentController::class, 'addVisitorNote']);
         Route::patch('/status',             [AgentController::class, 'updateStatus']);
+        Route::get('/metrics',              [AgentController::class, 'metrics']);
+
+        // WebSocket triggers
+        Route::post('/chat/{id}/typing',    [AgentController::class, 'typing']);
+        Route::post('/chat/{id}/join',      [AgentController::class, 'joinChat']);
+        Route::post('/chat/{id}/leave',     [AgentController::class, 'leaveChat']);
 
         // Followups
         Route::get('/followups',               [FollowupController::class, 'index']);
@@ -56,8 +67,11 @@ Route::prefix('agent')
         Route::patch('/followups/{id}/cancel',   [FollowupController::class, 'cancel']);
 
         // Tickets
-        Route::post('/tickets',         [TicketController::class, 'store']);
-        Route::patch('/tickets/{id}',   [TicketController::class, 'update']);
+        Route::post('/tickets',                       [TicketController::class, 'store']);
+        Route::patch('/tickets/{id}',                 [TicketController::class, 'update']);
+        Route::patch('/tickets/{id}/interested',      [TicketController::class, 'markInterested']);
+        Route::patch('/tickets/{id}/not-interested',  [TicketController::class, 'markNotInterested']);
+        Route::post('/tickets/{id}/quotation',        [TicketController::class, 'sendQuotation']);
     });
 
 /*
@@ -80,4 +94,7 @@ Route::prefix('admin')
         // Settings
         Route::get('/settings',    [AdminController::class, 'settings']);
         Route::put('/settings',    [AdminController::class, 'updateSettings']);
+
+        // Reports & Insights
+        Route::get('/reports',     [\App\Http\Controllers\API\InsightsController::class, 'index']);
     });

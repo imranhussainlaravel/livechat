@@ -17,13 +17,15 @@ class Followup extends Model
         'followup_time',
         'status',
         'notes',
+        'reminder_sent_at',
     ];
 
     protected function casts(): array
     {
         return [
-            'followup_time' => 'datetime',
-            'status'        => FollowupStatus::class,
+            'status'           => FollowupStatus::class,
+            'followup_time'    => 'datetime',
+            'reminder_sent_at' => 'datetime',
         ];
     }
 

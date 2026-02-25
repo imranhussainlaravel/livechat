@@ -48,4 +48,38 @@ class TicketController extends Controller
             'data'    => new TicketResource($ticket),
         ]);
     }
+
+    public function markInterested(Request $request, int $id): JsonResponse
+    {
+        $ticket = $this->service->markInterested($id, $request->user()->id);
+
+        return response()->json([
+            'message' => 'Ticket marked as interested.',
+            'data'    => new TicketResource($ticket),
+        ]);
+    }
+
+    public function markNotInterested(Request $request, int $id): JsonResponse
+    {
+        $ticket = $this->service->markNotInterested($id, $request->user()->id);
+
+        return response()->json([
+            'message' => 'Ticket marked as not interested.',
+            'data'    => new TicketResource($ticket),
+        ]);
+    }
+
+    public function sendQuotation(Request $request, int $id): JsonResponse
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:0.01',
+        ]);
+
+        $ticket = $this->service->sendQuotation($id, $request->user()->id, $request->amount);
+
+        return response()->json([
+            'message' => 'Quotation generated and sent to visitor.',
+            'data'    => new TicketResource($ticket),
+        ]);
+    }
 }

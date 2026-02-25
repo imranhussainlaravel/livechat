@@ -7,8 +7,10 @@ use App\DTOs\StartChatDTO;
 use App\DTOs\TransferChatDTO;
 use App\Enums\ChatStatus;
 use App\Enums\MessageSenderType;
+use App\Events\ChatAssigned;
 use App\Events\ChatClosed;
 use App\Events\ChatStarted;
+use App\Events\ChatStatusUpdated;
 use App\Events\ChatTransferred;
 use App\Events\MessageSent;
 use App\Models\Chat;
@@ -16,7 +18,7 @@ use App\Models\Visitor;
 use App\Repositories\Contracts\ChatRepositoryInterface;
 use App\Repositories\Contracts\MessageRepositoryInterface;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
+use InvalidArgumentException;
 
 class ChatService
 {
@@ -27,13 +29,18 @@ class ChatService
         private ActivityService            $activity,
     ) {}
 
+    /* ================================================================== */
+    /*  1. START CHAT                                                      */
+    /* ================================================================== */
+
     /**
-     * Start a new chat from a visitor widget.
+     * Visitor starts a new chat from the website widget.
+     * Creates visitor (if new), creates chat, attempts auto-assignment.
      */
     public function startChat(StartChatDTO $dto): Chat
     {
         return DB::transaction(function () use ($dto) {
-            // Find or create visitor
+            // Find or create visitor by session token
             $visitor = Visitor::firstOrCreate(
                 ['session_token' => $dto->sessionToken],
                 [
@@ -43,69 +50,171 @@ class ChatService
                 ]
             );
 
-            // Create the chat
+            // Create chat in PENDING status
             $chat = $this->chats->create([
-                'visitor_id'  => $visitor->id,
-                'status'      => ChatStatus::PENDING->value,
-                'priority'    => 'normal',
-                'subject'     => $dto->subject,
-                'metadata'    => $dto->metadata,
-                'started_at'  => now(),
+                'visitor_id' => $visitor->id,
+                'status'     => ChatStatus::PENDING->value,
+                'priority'   => 'normal',
+                'subject'    => $dto->subject,
+                'metadata'   => $dto->metadata,
+                'started_at' => now(),
             ]);
 
-            // Try auto-assign to available agent
+            // System welcome message
+            $this->systemMessage($chat->id, 'Chat started. Connecting you with an agent...');
+
+            // Try auto-assign to least-loaded available agent
             $this->assignment->tryAssign($chat);
 
-            event(new ChatStarted($chat->fresh(['visitor', 'agent'])));
+            $chat = $chat->fresh(['visitor', 'agent']);
 
-            return $chat->fresh(['visitor', 'agent']);
+            event(new ChatStarted($chat));
+
+            return $chat;
         });
     }
 
-    /**
-     * Send a message within an existing chat.
-     */
-    public function sendMessage(SendMessageDTO $dto)
-    {
-        $message = $this->messages->create([
-            'chat_id'     => $dto->chatId,
-            'sender_type' => $dto->senderType,
-            'sender_id'   => $dto->senderId,
-            'message'     => $dto->message,
-            'metadata'    => $dto->metadata,
-        ]);
-
-        event(new MessageSent($message->load('chat')));
-
-        return $message;
-    }
+    /* ================================================================== */
+    /*  2. ASSIGN AGENT                                                    */
+    /* ================================================================== */
 
     /**
-     * Agent accepts a pending chat.
+     * Manually assign an agent to a chat (admin or agent acceptance).
+     * Transitions: pending → open.
      */
-    public function acceptChat(int $chatId, int $agentId): Chat
+    public function assignAgent(int $chatId, int $agentId): Chat
     {
         return DB::transaction(function () use ($chatId, $agentId) {
+            $chat = $this->chats->findById($chatId);
+
+            // Validate status allows assignment (must be pending)
+            $chat->status->transitionTo(ChatStatus::OPEN);
+
             $chat = $this->chats->update($chatId, [
                 'assigned_agent_id' => $agentId,
                 'status'            => ChatStatus::OPEN->value,
             ]);
 
-            $this->messages->create([
-                'chat_id'     => $chatId,
-                'sender_type' => MessageSenderType::SYSTEM->value,
-                'sender_id'   => null,
-                'message'     => 'Agent has joined the conversation.',
-            ]);
+            $this->systemMessage($chatId, 'Agent has joined the conversation.');
+            $this->activity->log($agentId, 'chat.assigned', 'Chat', $chatId);
 
-            $this->activity->log($agentId, 'chat.accepted', 'Chat', $chatId);
+            $chat = $chat->fresh(['visitor', 'agent']);
 
-            return $chat->fresh(['visitor', 'agent']);
+            event(new ChatAssigned($chat, $chat->agent));
+
+            return $chat;
         });
     }
 
+    /* ================================================================== */
+    /*  3. SEND MESSAGE                                                    */
+    /* ================================================================== */
+
     /**
-     * Transfer chat to another agent.
+     * Send a message within an existing chat.
+     * Automatically transitions open → in_progress on first agent reply.
+     */
+    public function sendMessage(SendMessageDTO $dto)
+    {
+        return DB::transaction(function () use ($dto) {
+            $chat = $this->chats->findById($dto->chatId);
+
+            // Auto-transition: open → in_progress on first agent message
+            if (
+                $dto->senderType === MessageSenderType::AGENT->value
+                && $chat->status === ChatStatus::OPEN
+            ) {
+                $this->transitionStatus($chat, ChatStatus::IN_PROGRESS, $dto->senderId);
+            }
+
+            $message = $this->messages->create([
+                'chat_id'     => $dto->chatId,
+                'sender_type' => $dto->senderType,
+                'sender_id'   => $dto->senderId,
+                'message'     => $dto->message,
+                'metadata'    => $dto->metadata,
+            ]);
+
+            event(new MessageSent($message->load('chat')));
+
+            return $message;
+        });
+    }
+
+    /* ================================================================== */
+    /*  4. UPDATE STATUS                                                   */
+    /* ================================================================== */
+
+    /**
+     * Transition chat to a new status with full flow validation.
+     *
+     * Status flow:
+     *   pending → open → in_progress → solved → closed
+     *   open/in_progress ↔ followup
+     *
+     * @throws InvalidArgumentException on invalid transition
+     */
+    public function updateStatus(int $chatId, ChatStatus $newStatus, int $agentId): Chat
+    {
+        return DB::transaction(function () use ($chatId, $newStatus, $agentId) {
+            $chat = $this->chats->findById($chatId);
+            $oldStatus = $chat->status;
+            $assignedAgentId = $chat->assigned_agent_id;
+
+            // Validate the transition is allowed
+            $chat->status->transitionTo($newStatus);
+
+            $updateData = ['status' => $newStatus->value];
+
+            // Set timestamps on terminal states
+            if ($newStatus === ChatStatus::CLOSED) {
+                $updateData['ended_at'] = now();
+            }
+
+            $chat = $this->chats->update($chatId, $updateData);
+
+            $this->systemMessage($chatId, "Status changed to {$newStatus->label()}.");
+            $this->activity->log($agentId, 'chat.status_updated', 'Chat', $chatId, [
+                'from' => $oldStatus->value,
+                'to'   => $newStatus->value,
+            ]);
+
+            $chat = $chat->fresh(['visitor', 'agent']);
+
+            // Fire specific event for closed, generic for others
+            if ($newStatus === ChatStatus::CLOSED) {
+                event(new ChatClosed($chat));
+
+                // Free up the agent's capacity and trigger queue processing
+                if ($assignedAgentId) {
+                    $this->assignment->onAgentFreed($assignedAgentId);
+                }
+            } else {
+                event(new ChatStatusUpdated($chat, $oldStatus, $newStatus));
+            }
+
+            return $chat;
+        });
+    }
+
+    /* ================================================================== */
+    /*  5. CLOSE CHAT                                                      */
+    /* ================================================================== */
+
+    /**
+     * Close a chat. Validates the transition and sets ended_at.
+     */
+    public function closeChat(int $chatId, int $agentId): Chat
+    {
+        return $this->updateStatus($chatId, ChatStatus::CLOSED, $agentId);
+    }
+
+    /* ================================================================== */
+    /*  6. TRANSFER CHAT                                                   */
+    /* ================================================================== */
+
+    /**
+     * Transfer a chat to another agent. Creates transfer record.
      */
     public function transferChat(TransferChatDTO $dto): Chat
     {
@@ -120,44 +229,68 @@ class ChatService
                 'reason'        => $dto->reason,
             ]);
 
-            $this->messages->create([
-                'chat_id'     => $dto->chatId,
-                'sender_type' => MessageSenderType::SYSTEM->value,
-                'sender_id'   => null,
-                'message'     => 'Chat has been transferred to another agent.',
+            $this->systemMessage($dto->chatId, 'Chat has been transferred to another agent.');
+            $this->activity->log($dto->fromAgentId, 'chat.transferred', 'Chat', $dto->chatId, [
+                'to_agent_id' => $dto->toAgentId,
             ]);
 
-            $this->activity->log($dto->fromAgentId, 'chat.transferred', 'Chat', $dto->chatId);
+            // Adjust load: transferred FROM agent is freed, transferred TO agent load increments
+            app(AgentLoadService::class)->increment($dto->toAgentId);
+            $this->assignment->onAgentFreed($dto->fromAgentId);
 
-            event(new ChatTransferred($chat->fresh(['visitor', 'agent'])));
+            $chat = $chat->fresh(['visitor', 'agent']);
 
-            return $chat->fresh(['visitor', 'agent']);
+            event(new ChatTransferred($chat));
+            event(new ChatAssigned($chat, $chat->agent));
+
+            return $chat;
         });
     }
 
+    /* ================================================================== */
+    /*  7. ACCEPT CHAT (Agent picks a pending chat)                        */
+    /* ================================================================== */
+
     /**
-     * Close a chat.
+     * Agent manually accepts a pending chat.
+     * Shortcut for assignAgent().
      */
-    public function closeChat(int $chatId, int $agentId): Chat
+    public function acceptChat(int $chatId, int $agentId): Chat
     {
-        return DB::transaction(function () use ($chatId, $agentId) {
-            $chat = $this->chats->update($chatId, [
-                'status'   => ChatStatus::CLOSED->value,
-                'ended_at' => now(),
-            ]);
+        return $this->assignAgent($chatId, $agentId);
+    }
 
-            $this->messages->create([
-                'chat_id'     => $chatId,
-                'sender_type' => MessageSenderType::SYSTEM->value,
-                'sender_id'   => null,
-                'message'     => 'Chat has been closed.',
-            ]);
+    /* ================================================================== */
+    /*  PRIVATE HELPERS                                                    */
+    /* ================================================================== */
 
-            $this->activity->log($agentId, 'chat.closed', 'Chat', $chatId);
+    /**
+     * Insert a system-generated message into the chat timeline.
+     */
+    private function systemMessage(int $chatId, string $text): void
+    {
+        $this->messages->create([
+            'chat_id'     => $chatId,
+            'sender_type' => MessageSenderType::SYSTEM->value,
+            'sender_id'   => null,
+            'message'     => $text,
+        ]);
+    }
 
-            event(new ChatClosed($chat->fresh(['visitor', 'agent'])));
+    /**
+     * Internal status transition — updates DB and logs, but does NOT fire events.
+     * Used by sendMessage for auto-transition.
+     */
+    private function transitionStatus(Chat $chat, ChatStatus $newStatus, ?int $agentId): void
+    {
+        $oldStatus = $chat->status;
+        $oldStatus->transitionTo($newStatus); // validate
 
-            return $chat->fresh(['visitor', 'agent']);
-        });
+        $this->chats->update($chat->id, ['status' => $newStatus->value]);
+
+        $this->activity->log($agentId, 'chat.status_auto', 'Chat', $chat->id, [
+            'from' => $oldStatus->value,
+            'to'   => $newStatus->value,
+        ]);
     }
 }

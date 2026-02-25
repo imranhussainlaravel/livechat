@@ -9,14 +9,19 @@ use App\Http\Resources\ChatResource;
 use App\Http\Resources\MessageResource;
 use App\DTOs\SendMessageDTO;
 use App\DTOs\TransferChatDTO;
+use App\Enums\ChatStatus;
 use App\Enums\MessageSenderType;
 use App\Events\AgentStatusChanged;
+use App\Events\TypingIndicator;
+use App\Events\AgentJoinedChat;
+use App\Events\AgentLeftChat;
 use App\Repositories\Contracts\ChatRepositoryInterface;
 use App\Repositories\Contracts\UserRepositoryInterface;
 use App\Services\ChatService;
 use App\Services\ActivityService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use InvalidArgumentException;
 
 class AgentController extends Controller
 {
@@ -101,36 +106,171 @@ class AgentController extends Controller
     }
 
     /**
+     * PATCH /api/agent/chat/{id}/status — Update chat status with flow validation.
+     *
+     * Flow: pending → open → in_progress → solved → closed
+     */
+    public function updateChatStatus(Request $request, int $id): JsonResponse
+    {
+        $request->validate([
+            'status' => 'required|in:open,in_progress,solved,closed,followup',
+        ]);
+
+        try {
+            $newStatus = ChatStatus::from($request->status);
+            $chat = $this->chatService->updateStatus($id, $newStatus, $request->user()->id);
+
+            return response()->json([
+                'message' => "Chat status updated to {$newStatus->label()}.",
+                'data'    => new ChatResource($chat),
+            ]);
+        } catch (InvalidArgumentException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    /**
      * POST /api/agent/chat/{id}/close — Close a chat.
      */
     public function close(Request $request, int $id): JsonResponse
     {
-        $chat = $this->chatService->closeChat($id, $request->user()->id);
+        try {
+            $chat = $this->chatService->closeChat($id, $request->user()->id);
+
+            return response()->json([
+                'message' => 'Chat closed.',
+                'data'    => new ChatResource($chat),
+            ]);
+        } catch (InvalidArgumentException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    /**
+     * POST /api/agent/chat/{id}/typing — Broadcast typing indicator.
+     */
+    public function typing(Request $request, int $id): JsonResponse
+    {
+        $request->validate([
+            'is_typing' => 'required|boolean',
+        ]);
+
+        event(new TypingIndicator(
+            chatId: $id,
+            userId: $request->user()->id,
+            userName: $request->user()->name,
+            senderType: 'agent',
+            isTyping: $request->boolean('is_typing'),
+        ));
+
+        return response()->json(['message' => 'OK']);
+    }
+
+    /**
+     * POST /api/agent/chat/{id}/join — Agent joins a chat room (presence).
+     */
+    public function joinChat(Request $request, int $id): JsonResponse
+    {
+        event(new AgentJoinedChat($id, $request->user()));
+
+        return response()->json(['message' => 'Joined chat.']);
+    }
+
+    /**
+     * POST /api/agent/chat/{id}/leave — Agent leaves a chat room (presence).
+     */
+    public function leaveChat(Request $request, int $id): JsonResponse
+    {
+        event(new AgentLeftChat($id, $request->user()));
+
+        return response()->json(['message' => 'Left chat.']);
+    }
+
+    /**
+     * GET /api/agent/chat/{id} — Get details of a single chat including messages.
+     */
+    public function show(int $id): JsonResponse
+    {
+        $chat = $this->chats->findWithRelations($id, ['visitor', 'agent']);
+        $messages = app(\App\Repositories\Contracts\MessageRepositoryInterface::class)->getByChatId($id);
 
         return response()->json([
-            'message' => 'Chat closed.',
-            'data'    => new ChatResource($chat),
+            'data' => [
+                'chat'     => new ChatResource($chat),
+                'messages' => MessageResource::collection($messages),
+                'meta'     => [
+                    'current_page' => $messages->currentPage(),
+                    'last_page'    => $messages->lastPage(),
+                    'total'        => $messages->total(),
+                ]
+            ]
         ]);
     }
 
     /**
-     * PATCH /api/agent/status — Update agent's own status.
+     * POST /api/agent/chat/{id}/visitor-note — Add a note to the visitor.
      */
-    public function updateStatus(Request $request): JsonResponse
+    public function addVisitorNote(Request $request, int $id): JsonResponse
     {
-        $request->validate([
-            'status' => 'required|in:online,away,busy,offline',
-        ]);
+        $request->validate(['note' => 'required|string|max:1000']);
 
-        $agent = $this->users->updateStatus($request->user()->id, $request->status);
+        $chat = $this->chats->findWithRelations($id, ['visitor']);
+        $visitor = $chat->visitor;
 
-        $this->activity->log($agent->id, 'agent.status_changed', 'User', $agent->id, ['status' => $request->status]);
+        // Append note to metadata array
+        $metadata = $visitor->metadata ?? [];
+        $metadata['notes'][] = [
+            'agent_id'   => $request->user()->id,
+            'note'       => $request->note,
+            'created_at' => now()->toIso8601String(),
+        ];
 
-        event(new AgentStatusChanged($agent));
+        $visitor->update(['metadata' => $metadata]);
+
+        $this->activity->log($request->user()->id, 'visitor.note_added', 'Visitor', $visitor->id);
 
         return response()->json([
-            'message' => 'Status updated.',
-            'data'    => ['status' => $agent->status],
+            'message' => 'Note added to visitor profile.',
+            'data'    => $metadata['notes'],
+        ]);
+    }
+
+    /**
+     * GET /api/agent/metrics — Get performance metrics for the current agent.
+     */
+    public function metrics(Request $request): JsonResponse
+    {
+        $agentId = $request->user()->id;
+
+        $activeChats = $this->chats->getActiveCount($agentId);
+
+        $totalResolved = \App\Models\Chat::where('assigned_agent_id', $agentId)
+            ->where('status', ChatStatus::SOLVED->value)
+            ->count();
+
+        // Calculate average resolution time (ended_at - started_at) in minutes
+        $avgResolutionTime = \App\Models\Chat::where('assigned_agent_id', $agentId)
+            ->whereNotNull('ended_at')
+            ->selectRaw('AVG(TIMESTAMPDIFF(MINUTE, started_at, ended_at)) as avg_time')
+            ->value('avg_time');
+
+        // Total messages sent by this agent today
+        $messagesSentToday = \App\Models\ChatMessage::where('sender_id', $agentId)
+            ->where('sender_type', MessageSenderType::AGENT->value)
+            ->whereDate('created_at', now()->toDateString())
+            ->count();
+
+        return response()->json([
+            'data' => [
+                'active_chats'         => $activeChats,
+                'total_resolved'       => $totalResolved,
+                'avg_resolution_mins'  => floor((float) $avgResolutionTime),
+                'messages_sent_today'  => $messagesSentToday,
+            ]
         ]);
     }
 }
