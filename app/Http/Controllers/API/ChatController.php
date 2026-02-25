@@ -1,0 +1,75 @@
+<?php
+
+namespace App\Http\Controllers\API;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\StartChatRequest;
+use App\Http\Requests\SendMessageRequest;
+use App\Http\Resources\ChatResource;
+use App\Http\Resources\MessageResource;
+use App\DTOs\SendMessageDTO;
+use App\DTOs\StartChatDTO;
+use App\Enums\MessageSenderType;
+use App\Repositories\Contracts\MessageRepositoryInterface;
+use App\Services\ChatService;
+use Illuminate\Http\JsonResponse;
+
+class ChatController extends Controller
+{
+    public function __construct(
+        private ChatService                $chatService,
+        private MessageRepositoryInterface $messages,
+    ) {}
+
+    /**
+     * POST /api/chat/start — Visitor starts a new chat.
+     */
+    public function start(StartChatRequest $request): JsonResponse
+    {
+        $dto  = StartChatDTO::fromRequest($request->validated());
+        $chat = $this->chatService->startChat($dto);
+
+        return response()->json([
+            'message' => 'Chat started.',
+            'data'    => new ChatResource($chat),
+        ], 201);
+    }
+
+    /**
+     * POST /api/chat/{id}/send — Visitor sends a message.
+     */
+    public function send(SendMessageRequest $request, int $id): JsonResponse
+    {
+        $dto = new SendMessageDTO(
+            chatId: $id,
+            senderType: MessageSenderType::VISITOR->value,
+            senderId: null,
+            message: $request->validated('message'),
+            metadata: $request->validated('metadata'),
+        );
+
+        $message = $this->chatService->sendMessage($dto);
+
+        return response()->json([
+            'message' => 'Message sent.',
+            'data'    => new MessageResource($message),
+        ], 201);
+    }
+
+    /**
+     * GET /api/chat/{id}/messages — Get chat messages (visitor).
+     */
+    public function messages(int $id): JsonResponse
+    {
+        $messages = $this->messages->getByChatId($id);
+
+        return response()->json([
+            'data' => MessageResource::collection($messages),
+            'meta' => [
+                'current_page' => $messages->currentPage(),
+                'last_page'    => $messages->lastPage(),
+                'total'        => $messages->total(),
+            ],
+        ]);
+    }
+}
