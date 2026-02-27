@@ -89,7 +89,7 @@ class ReportingService
 
         foreach ($agents as $agent) {
             $totalResolved = Chat::where('assigned_agent_id', $agent->id)
-                ->where('status', ChatStatus::SOLVED->value)
+                ->where('status', ChatStatus::CLOSED->value)
                 ->where('created_at', '>=', $startDate)
                 ->count();
 

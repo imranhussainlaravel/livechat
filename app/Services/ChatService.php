@@ -6,6 +6,7 @@ use App\DTOs\SendMessageDTO;
 use App\DTOs\StartChatDTO;
 use App\DTOs\TransferChatDTO;
 use App\Enums\ChatStatus;
+use App\Enums\QueueStatus;
 use App\Enums\MessageSenderType;
 use App\Events\ChatAssigned;
 use App\Events\ChatClosed;
@@ -50,21 +51,19 @@ class ChatService
                 ]
             );
 
-            // Create chat in PENDING status
+            // Create chat in PENDING status, QUEUED queue_status
             $chat = $this->chats->create([
-                'visitor_id' => $visitor->id,
-                'status'     => ChatStatus::PENDING->value,
-                'priority'   => 'normal',
-                'subject'    => $dto->subject,
-                'metadata'   => $dto->metadata,
-                'started_at' => now(),
+                'visitor_id'   => $visitor->id,
+                'status'       => ChatStatus::PENDING->value,
+                'queue_status' => QueueStatus::QUEUED->value,
+                'priority'     => 'normal',
+                'subject'      => $dto->subject,
+                'metadata'     => $dto->metadata,
+                'started_at'   => now(),
             ]);
 
             // System welcome message
-            $this->systemMessage($chat->id, 'Chat started. Connecting you with an agent...');
-
-            // Trigger global FIFO queue processing
-            $this->queue->assignPendingChats();
+            $this->systemMessage($chat->id, 'Chat started. Please wait while we connect you to an agent...');
 
             $chat = $chat->fresh(['visitor', 'agent']);
 
@@ -87,12 +86,13 @@ class ChatService
         return DB::transaction(function () use ($chatId, $agentId) {
             $chat = $this->chats->findById($chatId);
 
-            // Validate status allows assignment (must be pending)
-            $chat->status->transitionTo(ChatStatus::OPEN);
+            // Transition to active from queue (assigned isn't used for queue logic but we can jump to ACTIVE directly)
+            $chat->status->transitionTo(ChatStatus::ACTIVE);
 
             $chat = $this->chats->update($chatId, [
                 'assigned_agent_id' => $agentId,
-                'status'            => ChatStatus::OPEN->value,
+                'queue_status'      => QueueStatus::PICKED->value,
+                'status'            => ChatStatus::ACTIVE->value,
             ]);
 
             $this->systemMessage($chatId, 'Agent has joined the conversation.');
@@ -119,12 +119,12 @@ class ChatService
         return DB::transaction(function () use ($dto) {
             $chat = $this->chats->findById($dto->chatId);
 
-            // Auto-transition: open → in_progress on first agent message
+            // Auto-transition: assigned → active on first agent message
             if (
                 $dto->senderType === MessageSenderType::AGENT->value
-                && $chat->status === ChatStatus::OPEN
+                && $chat->status === ChatStatus::ASSIGNED
             ) {
-                $this->transitionStatus($chat, ChatStatus::IN_PROGRESS, $dto->senderId);
+                $this->transitionStatus($chat, ChatStatus::ACTIVE, $dto->senderId);
             }
 
             $message = $this->messages->create([
@@ -171,6 +171,10 @@ class ChatService
                 $updateData['ended_at'] = now();
             }
 
+            if ($newStatus === ChatStatus::CLOSED) {
+                $updateData['queue_status'] = QueueStatus::NONE->value;
+            }
+
             $chat = $this->chats->update($chatId, $updateData);
 
             $this->systemMessage($chatId, "Status changed to {$newStatus->label()}.");
@@ -182,12 +186,12 @@ class ChatService
             $chat = $chat->fresh(['visitor', 'agent']);
 
             // Fire specific event for closed, generic for others
-            if ($newStatus === ChatStatus::CLOSED || $newStatus === ChatStatus::SOLVED) {
+            if ($newStatus === ChatStatus::CLOSED) {
                 if ($newStatus === ChatStatus::CLOSED) {
                     event(new ChatClosed($chat));
                 }
 
-                // Free up the agent's capacity and trigger queue processing
+                // Free up the agent's capacity
                 if ($assignedAgentId) {
                     $this->queue->releaseChatFromAgent($chat);
                 }
@@ -251,7 +255,6 @@ class ChatService
             // Alert queues and specific agents
             event(new \App\Events\AgentLoadUpdated($dto->fromAgentId));
             event(new \App\Events\AgentLoadUpdated($dto->toAgentId));
-            $this->queue->assignPendingChats(); // Process queue for the freed agent space
 
             event(new ChatTransferred($chat));
             event(new ChatAssigned($chat, $chat->agent));

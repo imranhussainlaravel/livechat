@@ -43,6 +43,12 @@ Route::prefix('agent')
         Route::get('/dashboard', [\App\Http\Controllers\Agent\DashboardController::class, 'index'])
             ->name('dashboard');
 
+        // Queue
+        Route::get('/queue', [\App\Http\Controllers\Agent\AgentQueueController::class, 'getQueueChats'])
+            ->name('queue.index');
+        Route::post('/queue/{id}/join', [\App\Http\Controllers\Agent\AgentQueueController::class, 'joinChat'])
+            ->name('queue.join');
+
         // Chats
         Route::get('/chats', [\App\Http\Controllers\Agent\ChatController::class, 'index'])
             ->name('chats.index');

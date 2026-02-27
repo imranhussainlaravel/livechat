@@ -26,7 +26,7 @@ class DashboardController extends Controller
         $activeChats = $this->chats->getActiveCount($agentId);
 
         $totalResolved = Chat::where('assigned_agent_id', $agentId)
-            ->where('status', ChatStatus::SOLVED->value)
+            ->where('status', ChatStatus::CLOSED->value)
             ->count();
 
         $avgResolutionTime = Chat::where('assigned_agent_id', $agentId)
@@ -42,7 +42,7 @@ class DashboardController extends Controller
         $pendingChats = Chat::where('status', ChatStatus::PENDING->value)->count();
 
         $recentChats = Chat::where('assigned_agent_id', $agentId)
-            ->whereIn('status', ['open', 'in_progress'])
+            ->whereIn('status', [ChatStatus::ASSIGNED->value, ChatStatus::ACTIVE->value])
             ->with('visitor')
             ->latest()
             ->take(10)

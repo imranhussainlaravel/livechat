@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ChatStatus;
+use App\Enums\QueueStatus;
 use App\Enums\PriorityLevel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -19,6 +20,7 @@ class Chat extends Model
         'visitor_id',
         'assigned_agent_id',
         'status',
+        'queue_status',
         'priority',
         'subject',
         'metadata',
@@ -30,10 +32,11 @@ class Chat extends Model
     protected function casts(): array
     {
         return [
-            'status'      => ChatStatus::class,
-            'priority'    => PriorityLevel::class,
-            'metadata'    => 'array',
-            'started_at'  => 'datetime',
+            'status'       => ChatStatus::class,
+            'queue_status' => QueueStatus::class,
+            'priority'     => PriorityLevel::class,
+            'metadata'     => 'array',
+            'started_at'   => 'datetime',
             'ended_at'    => 'datetime',
             'followup_at' => 'datetime',
         ];
@@ -82,9 +85,11 @@ class Chat extends Model
         return $query->whereIn('status', array_map(fn($s) => $s->value, ChatStatus::activeStates()));
     }
 
-    public function scopePending($query)
+    public function scopeQueued($query)
     {
-        return $query->where('status', ChatStatus::PENDING);
+        return $query->where('queue_status', QueueStatus::QUEUED)
+            ->whereNull('assigned_agent_id')
+            ->where('status', ChatStatus::PENDING);
     }
 
     public function scopeByAgent($query, int $agentId)

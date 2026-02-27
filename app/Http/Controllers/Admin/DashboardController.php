@@ -17,16 +17,15 @@ class DashboardController extends Controller
     public function index()
     {
         $stats = [
-            'active_chats'  => Chat::whereIn('status', ['open', 'in_progress'])->count(),
+            'active_chats'  => Chat::whereIn('status', ['assigned', 'active'])->count(),
             'pending_queue' => Chat::where('status', ChatStatus::PENDING)->count(),
             'agents_online' => User::where('role', UserRole::AGENT)->where('status', 'online')->count(),
             'total_today'   => Chat::whereDate('created_at', today())->count(),
-            'solved_today'  => Chat::where('status', ChatStatus::SOLVED)->whereDate('updated_at', today())->count(),
             'closed_today'  => Chat::where('status', ChatStatus::CLOSED)->whereDate('ended_at', today())->count(),
         ];
 
         $agents = User::where('role', UserRole::AGENT)
-            ->withCount(['assignedChats' => fn($q) => $q->whereIn('status', ['open', 'in_progress'])])
+            ->withCount(['assignedChats' => fn($q) => $q->whereIn('status', ['assigned', 'active'])])
             ->get();
 
         return view('admin.dashboard', compact('stats', 'agents'));

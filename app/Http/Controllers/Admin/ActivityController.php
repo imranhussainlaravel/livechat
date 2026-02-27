@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Activity;
 use App\Repositories\Contracts\ActivityRepositoryInterface;
 
 class ActivityController extends Controller
@@ -14,7 +15,7 @@ class ActivityController extends Controller
      */
     public function index()
     {
-        $activities = $this->activities->getRecent(50);
+        $activities = Activity::latest()->paginate(15);
 
         return view('admin.activities.index', compact('activities'));
     }

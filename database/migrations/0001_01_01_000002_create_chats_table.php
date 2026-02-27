@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('visitor_id')->constrained()->cascadeOnDelete();
             $table->foreignId('assigned_agent_id')->nullable()->constrained('users')->nullOnDelete();
-            $table->enum('status', ['pending', 'open', 'in_progress', 'solved', 'closed', 'followup'])
+            $table->enum('status', ['pending', 'assigned', 'active', 'closed', 'transferred'])
                 ->default('pending')->index();
             $table->enum('priority', ['low', 'normal', 'high'])->default('normal')->index();
             $table->string('subject')->nullable();

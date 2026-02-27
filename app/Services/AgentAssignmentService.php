@@ -60,7 +60,7 @@ class AgentAssignmentService
                     DB::transaction(function () use ($chat, $agent) {
                         $this->chats->update($chat->id, [
                             'assigned_agent_id' => $agent->id,
-                            'status'            => ChatStatus::OPEN->value,
+                            'status'            => ChatStatus::ASSIGNED->value,
                         ]);
 
                         $this->load->increment($agent->id);

@@ -53,9 +53,9 @@ class ChatRepository implements ChatRepositoryInterface
 
     public function getPendingChats()
     {
-        return Chat::where('status', ChatStatus::PENDING)
+        return Chat::queued()
             ->with('visitor')
-            ->orderBy('created_at')
+            ->orderBy('created_at', 'asc')
             ->get();
     }
 

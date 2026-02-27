@@ -36,9 +36,15 @@ class ChatController extends Controller
      */
     public function index(Request $request)
     {
+        // By default, showing active assigned/active chats for this agent
+        $filters = $request->only(['status', 'per_page']);
+        if (!isset($filters['status'])) {
+            $filters['status'] = 'active';
+        }
+
         $chats = $this->chats->getByAgent(
             $request->user()->id,
-            $request->only(['status', 'per_page']),
+            $filters,
         );
 
         return view('agent.chats.index', compact('chats'));
@@ -126,7 +132,7 @@ class ChatController extends Controller
     public function updateStatus(Request $request, int $id)
     {
         $request->validate([
-            'status' => 'required|in:open,in_progress,solved,closed,followup',
+            'status' => 'required|in:pending,assigned,active,closed,transferred',
         ]);
 
         try {

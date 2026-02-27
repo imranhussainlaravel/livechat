@@ -41,7 +41,7 @@
                     </div>
                     <div class="flex items-center gap-3">
                         <span class="text-xs font-medium px-2.5 py-0.5 rounded-full
-                                    {{ $chat->status->value === 'in_progress' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800' }}">
+                                    {{ in_array($chat->status->value, ['active', 'assigned']) ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800' }}">
                             {{ ucfirst(str_replace('_', ' ', $chat->status->value)) }}
                         </span>
                         <span class="text-xs text-gray-400 whitespace-nowrap">{{ $chat->updated_at->diffForHumans() }}</span>

@@ -6,28 +6,26 @@ use InvalidArgumentException;
 
 enum ChatStatus: string
 {
-    case PENDING     = 'pending';
-    case OPEN        = 'open';
-    case IN_PROGRESS = 'in_progress';
-    case SOLVED      = 'solved';
-    case CLOSED      = 'closed';
-    case FOLLOWUP    = 'followup';
+    case PENDING     = 'pending';       // waiting for agent assignment
+    case ASSIGNED    = 'assigned';      // assigned to an agent
+    case ACTIVE      = 'active';        // agent and user actively chatting
+    case CLOSED      = 'closed';        // chat completed
+    case TRANSFERRED = 'transferred';   // moved to another agent
 
     public function label(): string
     {
         return match ($this) {
             self::PENDING     => 'Pending',
-            self::OPEN        => 'Open',
-            self::IN_PROGRESS => 'In Progress',
-            self::SOLVED      => 'Solved',
+            self::ASSIGNED    => 'Assigned',
+            self::ACTIVE      => 'Active',
             self::CLOSED      => 'Closed',
-            self::FOLLOWUP    => 'Follow-up',
+            self::TRANSFERRED => 'Transferred',
         };
     }
 
     /* ------------------------------------------------------------------ */
-    /*  Status Flow: pending → open → in_progress → solved → closed       */
-    /*  Additional: open/in_progress → followup → in_progress             */
+    /*  Status Flow: pending → assigned → active → closed                 */
+    /*  Additional: assigned/active → transferred → assigned              */
     /* ------------------------------------------------------------------ */
 
     /**
@@ -36,12 +34,11 @@ enum ChatStatus: string
     public function allowedTransitions(): array
     {
         return match ($this) {
-            self::PENDING     => [self::OPEN, self::CLOSED],
-            self::OPEN        => [self::IN_PROGRESS, self::FOLLOWUP, self::CLOSED],
-            self::IN_PROGRESS => [self::SOLVED, self::FOLLOWUP, self::CLOSED],
-            self::FOLLOWUP    => [self::IN_PROGRESS, self::SOLVED, self::CLOSED],
-            self::SOLVED      => [self::CLOSED, self::IN_PROGRESS], // reopen
-            self::CLOSED      => [],                                 // terminal
+            self::PENDING     => [self::ASSIGNED, self::CLOSED],
+            self::ASSIGNED    => [self::ACTIVE, self::TRANSFERRED, self::CLOSED],
+            self::ACTIVE      => [self::TRANSFERRED, self::CLOSED],
+            self::TRANSFERRED => [self::ASSIGNED, self::CLOSED],
+            self::CLOSED      => [], // terminal
         };
     }
 
@@ -72,7 +69,7 @@ enum ChatStatus: string
     /** States that count as "active" for an agent's load. */
     public static function activeStates(): array
     {
-        return [self::OPEN, self::IN_PROGRESS, self::FOLLOWUP];
+        return [self::ASSIGNED, self::ACTIVE, self::TRANSFERRED];
     }
 
     /** Is this a terminal (finished) state? */

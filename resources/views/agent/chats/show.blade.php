@@ -29,11 +29,10 @@
                 @php
                 $statusColors = [
                 'pending' => 'bg-yellow-100 text-yellow-800',
-                'open' => 'bg-green-100 text-green-800',
-                'in_progress' => 'bg-blue-100 text-blue-800',
-                'solved' => 'bg-teal-100 text-teal-800',
+                'assigned' => 'bg-green-100 text-green-800',
+                'active' => 'bg-blue-100 text-blue-800',
+                'transferred' => 'bg-purple-100 text-purple-800',
                 'closed' => 'bg-gray-100 text-gray-800',
-                'followup' => 'bg-purple-100 text-purple-800',
                 ];
                 $statusBg = $statusColors[$chat->status->value] ?? 'bg-gray-100 text-gray-800';
                 @endphp
@@ -42,7 +41,7 @@
                 </span>
 
                 {{-- Quick Actions --}}
-                @if(! in_array($chat->status->value, ['closed', 'solved']))
+                @if(! in_array($chat->status->value, ['closed']))
                 <form method="POST" action="{{ route('agent.chats.close', $chat->id) }}" class="inline">
                     @csrf
                     <button type="submit" class="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-md text-red-600 bg-white hover:bg-red-50 hover:border-red-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors">
@@ -89,7 +88,7 @@
         </div>
 
         {{-- Message Input --}}
-        @if(! in_array($chat->status->value, ['closed', 'solved']))
+        @if(! in_array($chat->status->value, ['closed']))
         <form method="POST" action="{{ route('agent.chats.message', $chat->id) }}" id="message-form" class="bg-white border-t border-gray-100 p-4">
             @csrf
             <div class="flex items-end gap-3 rounded-lg border border-gray-300 bg-white px-3 py-2 shadow-sm focus-within:ring-1 focus-within:ring-blue-500 focus-within:border-blue-500">

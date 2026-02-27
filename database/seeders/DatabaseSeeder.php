@@ -31,5 +31,10 @@ class DatabaseSeeder extends Seeder
                 'status'   => 'offline',
             ]
         );
+
+        $this->call([
+            DemoChatSeeder::class,
+            DemoConversationSeeder::class,
+        ]);
     }
 }

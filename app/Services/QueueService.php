@@ -19,16 +19,7 @@ class QueueService
      */
     public function assignPendingChats(): void
     {
-        // Use a Redis lock to prevent race conditions in high concurrency
-        $lock = Redis::lock('chat_queue_assignment', 10);
-
-        if ($lock->get()) {
-            try {
-                $this->processQueue();
-            } finally {
-                $lock->release();
-            }
-        }
+        // Auto-assignment disabled. Agents manually pick from the queue.
     }
 
     /**
@@ -36,30 +27,7 @@ class QueueService
      */
     private function processQueue(): void
     {
-        // 1. Get pending chats ordered strictly by queued_at (FIFO).
-        $pendingChats = Chat::where('status', ChatStatus::PENDING->value)
-            ->orderBy('queued_at', 'asc')
-            ->get();
-
-        if ($pendingChats->isEmpty()) {
-            return;
-        }
-
-        foreach ($pendingChats as $chat) {
-            // 2. Find the best available agent
-            $agent = $this->getAvailableAgent();
-
-            if (! $agent) {
-                // Return immediately if no agents available - no point checking next chat.
-                break;
-            }
-
-            // 3. Assign chat & increment load
-            $this->assignChatToAgent($chat, $agent);
-        }
-
-        // Trigger an update for admin queues.
-        event(new ChatQueueUpdated());
+        // Auto-assignment disabled.
     }
 
     /**
@@ -130,7 +98,6 @@ class QueueService
 
         event(new AgentLoadUpdated($chat->assigned_agent_id));
 
-        // As a chat leaves, an agent opens up. Run the queue checker!
-        $this->assignPendingChats();
+        // As a chat leaves, an agent opens up. (Auto-assign removed)
     }
 }

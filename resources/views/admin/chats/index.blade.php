@@ -14,7 +14,7 @@
 <div class="flex flex-wrap items-center gap-2 mb-6 bg-white p-2 rounded-lg border border-gray-100 shadow-sm inline-flex">
     @php
     $currentStatus = request('status', 'open');
-    $filters = ['open', 'pending', 'in_progress', 'solved', 'closed'];
+    $filters = ['pending', 'assigned', 'active', 'closed', 'transferred'];
     @endphp
 
     @foreach($filters as $filter)
@@ -63,11 +63,10 @@
                 @php
                 $colors = [
                 'pending' => 'bg-yellow-100 text-yellow-800',
-                'open' => 'bg-green-100 text-green-800',
-                'in_progress' => 'bg-blue-100 text-blue-800',
-                'solved' => 'bg-teal-100 text-teal-800',
+                'assigned' => 'bg-green-100 text-green-800',
+                'active' => 'bg-blue-100 text-blue-800',
+                'transferred' => 'bg-purple-100 text-purple-800',
                 'closed' => 'bg-gray-100 text-gray-800',
-                'followup' => 'bg-purple-100 text-purple-800'
                 ];
                 $statusVal = $chat->status->value;
                 $statusClass = $colors[$statusVal] ?? 'bg-gray-100 text-gray-800';

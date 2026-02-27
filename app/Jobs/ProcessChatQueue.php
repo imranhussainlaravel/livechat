@@ -100,7 +100,7 @@ class ProcessChatQueue implements ShouldQueue
                         DB::transaction(function () use ($chat, $agent, $load, $activity) {
                             $chat->update([
                                 'assigned_agent_id' => $agent->id,
-                                'status'            => ChatStatus::OPEN->value,
+                                'status'            => ChatStatus::ASSIGNED->value,
                             ]);
 
                             // Increment agent load in Redis

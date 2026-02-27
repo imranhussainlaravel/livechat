@@ -39,7 +39,7 @@
             <div class="flex flex-col gap-3">
                 <div class="flex gap-2">
                     <select name="status" class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6">
-                        @foreach(['open', 'in_progress', 'solved', 'followup', 'closed'] as $s)
+                        @foreach(['pending', 'assigned', 'active', 'closed', 'transferred'] as $s)
                         <option value="{{ $s }}" {{ $chat->status->value === $s ? 'selected' : '' }}>
                             {{ ucfirst(str_replace('_', ' ', $s)) }}
                         </option>
@@ -92,7 +92,7 @@
     @endif
 
     {{-- 4. Transfer --}}
-    @if(! in_array($chat->status->value, ['closed', 'solved']))
+    @if(! in_array($chat->status->value, ['closed']))
     <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-5">
         <h4 class="text-sm font-semibold text-gray-900 mb-4 border-b border-gray-100 pb-2 flex items-center gap-2">
             <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
