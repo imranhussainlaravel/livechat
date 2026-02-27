@@ -75,6 +75,15 @@ class TicketService
 
         $this->activity->log($agentId, 'ticket.quotation_sent', 'Ticket', $ticketId, ['amount' => $amount]);
 
+        // Broadcast to chat room
+        $agentName = $ticket->agent->name ?? 'Agent';
+        event(new \App\Events\QuotationSent(
+            chatId: $ticket->chat_id,
+            amount: number_format($amount, 2),
+            note: 'Quotation sent to visitor.',
+            agentName: $agentName
+        ));
+
         return $ticket;
     }
 }

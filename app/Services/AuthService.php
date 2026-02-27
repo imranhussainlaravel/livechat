@@ -10,16 +10,13 @@ use Illuminate\Validation\ValidationException;
 
 class AuthService
 {
-    /** Token lifetime in minutes (24 hours). */
-    private const TOKEN_EXPIRATION_MINUTES = 1440;
-
     public function __construct(
         private UserRepositoryInterface $users,
         private ActivityService         $activity,
     ) {}
 
     /**
-     * Authenticate a user and return a Sanctum token with role-based redirect.
+     * Authenticate a user via session and return role-based redirect path.
      *
      * @throws ValidationException
      */
@@ -29,7 +26,6 @@ class AuthService
 
         // ── Credential check ────────────────────────────────────────
         if (! $user || ! Hash::check($password, $user->password)) {
-            // Log failed attempt
             $this->activity->log(
                 userId: $user?->id,
                 action: 'auth.login_failed',
@@ -48,15 +44,9 @@ class AuthService
             $user->update(['password' => Hash::make($password)]);
         }
 
-        // ── Revoke all previous tokens (single-session enforcement) ─
-        $user->tokens()->delete();
-
-        // ── Create new token with expiration ────────────────────────
-        $token = $user->createToken(
-            'livechat',
-            ['*'],
-            now()->addMinutes(self::TOKEN_EXPIRATION_MINUTES),
-        )->plainTextToken;
+        // ── Create session (replaces Sanctum token) ─────────────────
+        Auth::login($user, remember: true);
+        request()->session()->regenerate();
 
         // ── Set user online ─────────────────────────────────────────
         $this->users->updateStatus($user->id, 'online');
@@ -81,22 +71,19 @@ class AuthService
         };
 
         return [
-            'user'       => $user->fresh(),
-            'token'      => $token,
+            'user'        => $user->fresh(),
             'redirect_to' => $redirect,
-            'expires_in' => self::TOKEN_EXPIRATION_MINUTES * 60, // seconds
         ];
     }
 
     /**
-     * Logout the authenticated user, revoke token and set offline.
+     * Logout the authenticated user and set offline.
      */
     public function logout(): void
     {
         $user = Auth::user();
 
         if ($user) {
-            // Log logout activity
             $this->activity->log(
                 userId: $user->id,
                 action: 'auth.logout',
@@ -104,8 +91,11 @@ class AuthService
                 referenceId: $user->id,
             );
 
-            $user->currentAccessToken()->delete();
             $this->users->updateStatus($user->id, 'offline');
         }
+
+        Auth::guard('web')->logout();
+        request()->session()->invalidate();
+        request()->session()->regenerateToken();
     }
 }

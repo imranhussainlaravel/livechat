@@ -14,27 +14,36 @@ class ChatAssigned implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public function __construct(
-        public Chat $chat,
-        public User $agent,
-    ) {}
+    /**
+     * Create a new event instance.
+     */
+    public function __construct(public int $chatId, public int $agentId)
+    {
+        //
+    }
 
+    /**
+     * Get the channels the event should broadcast on.
+     *
+     * @return array<int, \Illuminate\Broadcasting\Channel>
+     */
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('chat.' . $this->chat->id),
-            new PrivateChannel('agents'),
-            new PrivateChannel('agent.' . $this->agent->id),
+            new PrivateChannel("App.Models.User.{$this->agentId}"),
         ];
     }
 
+    /**
+     * Get the data to broadcast.
+     *
+     * @return array<string, mixed>
+     */
     public function broadcastWith(): array
     {
         return [
-            'chat_id'    => $this->chat->id,
-            'agent_id'   => $this->agent->id,
-            'agent_name' => $this->agent->name,
-            'status'     => $this->chat->status->value,
+            'chat_id'  => $this->chatId,
+            'agent_id' => $this->agentId,
         ];
     }
 }

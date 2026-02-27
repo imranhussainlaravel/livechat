@@ -94,3 +94,24 @@ Broadcast::channel('agent.{agentId}', function ($user, int $agentId) {
 Broadcast::channel('admin', function ($user) {
     return $user->isAdmin();
 });
+
+/*
+|--------------------------------------------------------------------------
+| Phase 2 Queue System Channels
+|--------------------------------------------------------------------------
+*/
+Broadcast::channel('admin.queue', function ($user) {
+    return $user->isAdmin();
+});
+
+Broadcast::channel('agent.queue', function ($user) {
+    return $user->isAgent() || $user->isAdmin();
+});
+
+Broadcast::channel('admin.agents.load', function ($user) {
+    return $user->isAdmin();
+});
+
+Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
+    return (int) $user->id === (int) $id;
+});

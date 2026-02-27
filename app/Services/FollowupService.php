@@ -25,6 +25,16 @@ class FollowupService
 
         $this->activity->log($dto->agentId, 'followup.created', 'Followup', $followup->id);
 
+        $followup->loadMissing('agent');
+        $agentName = $followup->agent->name ?? 'Agent';
+
+        // Broadcast to Chat Room
+        event(new \App\Events\FollowupScheduled(
+            chatId: $dto->chatId,
+            scheduledAt: $dto->followupTime,
+            agentName: $agentName
+        ));
+
         return $followup;
     }
 

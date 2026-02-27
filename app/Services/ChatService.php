@@ -25,7 +25,7 @@ class ChatService
     public function __construct(
         private ChatRepositoryInterface    $chats,
         private MessageRepositoryInterface $messages,
-        private AgentAssignmentService     $assignment,
+        private QueueService               $queue,
         private ActivityService            $activity,
     ) {}
 
@@ -63,8 +63,8 @@ class ChatService
             // System welcome message
             $this->systemMessage($chat->id, 'Chat started. Connecting you with an agent...');
 
-            // Try auto-assign to least-loaded available agent
-            $this->assignment->tryAssign($chat);
+            // Trigger global FIFO queue processing
+            $this->queue->assignPendingChats();
 
             $chat = $chat->fresh(['visitor', 'agent']);
 
@@ -182,12 +182,14 @@ class ChatService
             $chat = $chat->fresh(['visitor', 'agent']);
 
             // Fire specific event for closed, generic for others
-            if ($newStatus === ChatStatus::CLOSED) {
-                event(new ChatClosed($chat));
+            if ($newStatus === ChatStatus::CLOSED || $newStatus === ChatStatus::SOLVED) {
+                if ($newStatus === ChatStatus::CLOSED) {
+                    event(new ChatClosed($chat));
+                }
 
                 // Free up the agent's capacity and trigger queue processing
                 if ($assignedAgentId) {
-                    $this->assignment->onAgentFreed($assignedAgentId);
+                    $this->queue->releaseChatFromAgent($chat);
                 }
             } else {
                 event(new ChatStatusUpdated($chat, $oldStatus, $newStatus));
@@ -234,11 +236,22 @@ class ChatService
                 'to_agent_id' => $dto->toAgentId,
             ]);
 
-            // Adjust load: transferred FROM agent is freed, transferred TO agent load increments
-            app(AgentLoadService::class)->increment($dto->toAgentId);
-            $this->assignment->onAgentFreed($dto->fromAgentId);
+            // Adjust load manually inside transfer instead of releasing and assigning freshly to avoid chat closing
+            $fromLoad = \App\Models\AgentChatLoad::where('agent_id', $dto->fromAgentId)->first();
+            if ($fromLoad && $fromLoad->active_chats > 0) {
+                $fromLoad->decrement('active_chats');
+            }
+
+            $toLoad = \App\Models\AgentChatLoad::firstOrCreate(['agent_id' => $dto->toAgentId]);
+            $toLoad->increment('active_chats');
+            $toLoad->update(['last_assigned_at' => now()]);
 
             $chat = $chat->fresh(['visitor', 'agent']);
+
+            // Alert queues and specific agents
+            event(new \App\Events\AgentLoadUpdated($dto->fromAgentId));
+            event(new \App\Events\AgentLoadUpdated($dto->toAgentId));
+            $this->queue->assignPendingChats(); // Process queue for the freed agent space
 
             event(new ChatTransferred($chat));
             event(new ChatAssigned($chat, $chat->agent));

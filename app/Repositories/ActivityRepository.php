@@ -26,4 +26,30 @@ class ActivityRepository implements ActivityRepositoryInterface
             ->limit($limit)
             ->get();
     }
+
+    public function getByChat(int $chatId)
+    {
+        return Activity::with('user')
+            ->where(function ($q) use ($chatId) {
+                // Actions directly on the Chat
+                $q->where('reference_type', 'Chat')
+                    ->where('reference_id', $chatId);
+            })
+            ->orWhere(function ($q) use ($chatId) {
+                // Actions on Tickets belonging to this chat
+                $q->where('reference_type', 'Ticket')
+                    ->whereIn('reference_id', function ($sub) use ($chatId) {
+                        $sub->select('id')->from('tickets')->where('chat_id', $chatId);
+                    });
+            })
+            ->orWhere(function ($q) use ($chatId) {
+                // Actions on Followups belonging to this chat
+                $q->where('reference_type', 'Followup')
+                    ->whereIn('reference_id', function ($sub) use ($chatId) {
+                        $sub->select('id')->from('followups')->where('chat_id', $chatId);
+                    });
+            })
+            ->latest()
+            ->get();
+    }
 }
