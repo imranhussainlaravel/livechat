@@ -6,7 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ?? 'LiveChat' }} — LiveChat</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <link rel="stylesheet" href="/css/app.css">
+    <script src="/js/app.js"></script>
 </head>
 
 <body class="bg-gray-950 text-gray-100 min-h-screen flex">

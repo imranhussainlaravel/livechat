@@ -5,7 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ config('app.name', 'LiveChat') }}</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <link rel="stylesheet" href="/css/app.css">
+    <script src="/js/app.js"></script>
     <!-- Tailwind CSS (temporary CDN for prototyping if Vite isn't setup fully for UI yet, otherwise use Vite) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/alpinejs" defer></script>
