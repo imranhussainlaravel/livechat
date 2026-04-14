@@ -9,7 +9,7 @@ class MessageRepository implements MessageRepositoryInterface
 {
     public function getByChatId(int $chatId, int $perPage = 50)
     {
-        return ChatMessage::where('chat_id', $chatId)
+        return ChatMessage::with('sender')->where('chat_id', $chatId)
             ->orderBy('created_at')
             ->paginate($perPage);
     }

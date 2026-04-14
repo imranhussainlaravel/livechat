@@ -1,9 +1,9 @@
-<div class="space-y-6 overflow-y-auto pr-2 pb-6">
+<div class="space-y-3 overflow-y-auto pr-2 pb-6">
 
     {{-- 1. Visitor Details --}}
-    <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-5">
-        <h4 class="text-sm font-semibold text-gray-900 mb-4 border-b border-gray-100 pb-2 flex items-center gap-2">
-            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-3.5">
+        <h4 class="text-xs font-semibold text-gray-900 mb-2.5 border-b border-gray-100 pb-1.5 flex items-center gap-2">
+            <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
             </svg>
             Visitor Details
@@ -26,9 +26,9 @@
 
     {{-- 2. Status Actions --}}
     @if(! in_array($chat->status->value, ['closed']))
-    <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-5">
-        <h4 class="text-sm font-semibold text-gray-900 mb-4 border-b border-gray-100 pb-2 flex items-center gap-2">
-            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-3.5">
+        <h4 class="text-xs font-semibold text-gray-900 mb-2.5 border-b border-gray-100 pb-1.5 flex items-center gap-2">
+            <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
             Chat Status
@@ -68,9 +68,9 @@
 
     {{-- 3. Followup Planner --}}
     @if(! in_array($chat->status->value, ['closed']))
-    <div class="bg-indigo-50 rounded-lg shadow-sm border border-indigo-100 p-5">
-        <h4 class="text-sm font-semibold text-indigo-900 mb-4 border-b border-indigo-200 pb-2 flex items-center gap-2">
-            <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div class="bg-indigo-50 rounded-lg shadow-sm border border-indigo-100 p-3.5">
+        <h4 class="text-xs font-semibold text-indigo-900 mb-2.5 border-b border-indigo-200 pb-1.5 flex items-center gap-2">
+            <svg class="w-3.5 h-3.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
             Schedule Follow-up
@@ -93,9 +93,9 @@
 
     {{-- 4. Transfer --}}
     @if(! in_array($chat->status->value, ['closed']))
-    <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-5">
-        <h4 class="text-sm font-semibold text-gray-900 mb-4 border-b border-gray-100 pb-2 flex items-center gap-2">
-            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-3.5">
+        <h4 class="text-xs font-semibold text-gray-900 mb-2.5 border-b border-gray-100 pb-1.5 flex items-center gap-2">
+            <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
             </svg>
             Transfer Chat
@@ -123,26 +123,26 @@
     @endif
 
     {{-- 5. Visitor Note --}}
-    <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-5">
-        <h4 class="text-sm font-semibold text-gray-900 mb-4 border-b border-gray-100 pb-2 flex items-center gap-2">
-            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-3.5">
+        <h4 class="text-xs font-semibold text-gray-900 mb-2.5 border-b border-gray-100 pb-1.5 flex items-center gap-2">
+            <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
             </svg>
             Internal Notes
         </h4>
         <form method="POST" action="{{ route('agent.chats.addVisitorNote', $chat->id) }}">
             @csrf
-            <textarea name="note" rows="3" placeholder="Add a private note about this visitor..." class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 mb-3"></textarea>
-            <button type="submit" class="w-full rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+            <textarea name="note" rows="2" placeholder="Add a private note..." class="block w-full rounded-md border-0 py-1 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 text-xs mb-2"></textarea>
+            <button type="submit" class="w-full rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
                 Save Note
             </button>
         </form>
     </div>
 
     {{-- 6. Escalate / Quotation --}}
-    <div class="bg-green-50 border border-green-100 rounded-lg p-5">
-        <h4 class="text-sm font-semibold text-green-900 mb-2 flex items-center gap-2">
-            <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div class="bg-green-50 border border-green-100 rounded-lg p-3.5">
+        <h4 class="text-xs font-semibold text-green-900 mb-2 flex items-center gap-2">
+            <svg class="w-3.5 h-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
             Sales & Tickets

@@ -3,10 +3,12 @@
 
 @section('content')
 
-<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-8rem)]">
+<style>
+    main { overflow: hidden !important; padding: 0 !important; }
+</style>
 
-    {{-- Chat Conversation (Main Area) --}}
-    <div class="lg:col-span-8 bg-white border border-gray-100 shadow-sm rounded-lg flex flex-col overflow-hidden">
+<div class="flex h-[calc(100vh-3rem)] overflow-hidden bg-gray-50">
+    <div class="flex-1 flex flex-col min-w-0 border-r border-gray-100">
 
         {{-- Chat Header --}}
         <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
@@ -53,7 +55,7 @@
         </div>
 
         {{-- Messages Area --}}
-        <div id="messages-container" class="flex-1 overflow-y-auto p-6 space-y-6 bg-white">
+        <div id="messages-container" class="flex-1 overflow-y-auto p-4 space-y-3 bg-white">
             @forelse($messages as $msg)
             @php
             $senderType = $msg->sender_type->value ?? $msg->sender_type;
@@ -62,7 +64,7 @@
             @endphp
 
             @if($isSystem)
-            <div class="flex items-center justify-center my-2">
+            <div class="flex items-center justify-center my-1.5">
                 <div class="flex items-center gap-4 w-full">
                     <div class="flex-1 h-px bg-gray-100"></div>
                     <span class="px-3 py-1 bg-gray-50 rounded-full text-[11px] font-medium text-gray-400 uppercase tracking-wider whitespace-nowrap">
@@ -75,8 +77,8 @@
             <x-chat-message
                 :isAgent="$isAgent"
                 :isBot="false"
-                :isMine="$isAgent && $msg->sender_id === auth()->id()"
-                :senderName="$isAgent ? ($msg->sender->name ?? 'Agent') : ($chat->visitor->name ?? 'Visitor')"
+                :isMine="$isAgent"
+                :senderName="$isAgent ? ($msg->sender->name ?? 'User') : ($chat->visitor->name ?? 'Visitor')"
                 :message="$msg->message"
                 :time="$msg->created_at->format('g:i A')" />
             @endif
@@ -102,7 +104,8 @@
 
         {{-- Message Input --}}
         @if(! in_array($chat->status->value, ['closed']))
-        <form method="POST" action="{{ route('agent.chats.message', $chat->id) }}" id="message-form" class="bg-white border-t border-gray-100 p-4">
+        <form method="POST" action="{{ route('agent.chats.message', $chat->id) }}" id="message-form" 
+              class="bg-white border-t border-gray-100 p-4 sticky bottom-0 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
             @csrf
             <div class="flex items-end gap-3 rounded-lg border border-gray-300 bg-white px-3 py-2 shadow-sm focus-within:ring-1 focus-within:ring-blue-500 focus-within:border-blue-500">
                 <textarea name="message" id="message-input" required autocomplete="off" rows="1"
@@ -127,7 +130,7 @@
     </div>
 
     {{-- Sidebar: Visitor Info & Actions --}}
-    <div class="lg:col-span-4 h-full">
+    <div class="w-80 h-full overflow-y-auto bg-white border-l border-gray-100 shadow-sm">
         <x-chat-sidebar :chat="$chat" :agents="$agents" />
     </div>
 </div>
@@ -201,10 +204,14 @@
 
             function appendSystemMessage(msg) {
                 const sysHtml = `
-                    <div class="flex justify-center my-4">
-                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
-                            ${msg}
-                        </span>
+                    <div class="flex items-center justify-center my-1.5">
+                        <div class="flex items-center gap-4 w-full">
+                            <div class="flex-1 h-px bg-gray-100"></div>
+                            <span class="px-3 py-1 bg-gray-50 rounded-full text-[11px] font-medium text-gray-400 uppercase tracking-wider whitespace-nowrap">
+                                ${msg}
+                            </span>
+                            <div class="flex-1 h-px bg-gray-100"></div>
+                        </div>
                     </div>
                 `;
                 container.insertAdjacentHTML('beforeend', sysHtml);
