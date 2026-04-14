@@ -10,13 +10,10 @@ class ChatController extends Controller
 {
     public function __construct(private ChatRepositoryInterface $chats) {}
 
-    /**
-     * GET /admin/chats — All chats with status filter.
-     */
     public function index(Request $request)
     {
         $chats = $this->chats->getByStatus(
-            $request->get('status', 'open'),
+            $request->get('status', 'pending'),
             $request->get('per_page', 15),
         );
 

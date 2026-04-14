@@ -13,7 +13,7 @@
 {{-- Status Filters --}}
 <div class="flex flex-wrap items-center gap-2 mb-6 bg-white p-2 rounded-lg border border-gray-100 shadow-sm inline-flex">
     @php
-    $currentStatus = request('status', 'open');
+    $currentStatus = request('status', 'pending');
     $filters = ['pending', 'assigned', 'active', 'closed', 'transferred'];
     @endphp
 

@@ -17,7 +17,7 @@ class ChatAssigned implements ShouldBroadcast
     /**
      * Create a new event instance.
      */
-    public function __construct(public int $chatId, public int $agentId)
+    public function __construct(public Chat $chat, public User $agent)
     {
         //
     }
@@ -30,7 +30,8 @@ class ChatAssigned implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel("App.Models.User.{$this->agentId}"),
+            new PrivateChannel("App.Models.User.{$this->agent->id}"),
+            new PrivateChannel("chat.{$this->chat->id}"),
         ];
     }
 
@@ -42,8 +43,9 @@ class ChatAssigned implements ShouldBroadcast
     public function broadcastWith(): array
     {
         return [
-            'chat_id'  => $this->chatId,
-            'agent_id' => $this->agentId,
+            'chat_id'  => $this->chat->id,
+            'agent_id' => $this->agent->id,
+            'status'   => $this->chat->status,
         ];
     }
 }

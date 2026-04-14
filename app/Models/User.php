@@ -79,7 +79,7 @@ class User extends Authenticatable
     {
         return $this->status === 'online'
             && $this->assignedChats()
-            ->whereIn('status', ['open', 'in_progress'])
+            ->whereIn('status', ['assigned', 'active', 'transferred'])
             ->count() < $this->max_chats;
     }
 }

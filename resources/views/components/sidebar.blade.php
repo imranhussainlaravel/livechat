@@ -24,16 +24,13 @@
                 </a>
             </li>
             <li>
-                <a href="#" class="flex items-center justify-between px-6 py-3 hover:bg-gray-800 rounded mx-2">
+                <a href="{{ route('admin.queue.index') }}" class="flex items-center justify-between px-6 py-3 hover:bg-gray-800 rounded mx-2 {{ request()->routeIs('admin.queue.*') ? 'bg-gray-800 text-blue-400' : '' }}">
                     <div class="flex items-center">
                         <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
                         Pending Queue
                     </div>
-                    <span class="bg-blue-600 text-white text-xs font-bold px-2 py-0.5 rounded-full" id="admin-queue-count">
-                        0
-                    </span>
                 </a>
             </li>
             <li>
@@ -91,16 +88,13 @@
                 </a>
             </li>
             <li>
-                <a href="{{ route('agent.chats.index') }}#queue" class="flex items-center justify-between px-6 py-3 hover:bg-gray-800 rounded mx-2">
+                <a href="{{ route('agent.queue.index') }}" class="flex items-center justify-between px-6 py-3 hover:bg-gray-800 rounded mx-2 {{ request()->routeIs('agent.queue.*') ? 'bg-gray-800 text-blue-400' : '' }}">
                     <div class="flex items-center">
                         <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
                         Pending Queue
                     </div>
-                    <span class="bg-blue-600 text-white text-xs font-bold px-2 py-0.5 rounded-full" id="agent-queue-count">
-                        0
-                    </span>
                 </a>
             </li>
             <li>

@@ -60,7 +60,7 @@ class QueueService
             // Assign to chat
             $chat->update([
                 'assigned_agent_id' => $agent->id,
-                'status' => ChatStatus::OPEN->value,
+                'status' => ChatStatus::ASSIGNED->value,
                 'started_at' => now(),
             ]);
 
@@ -75,7 +75,7 @@ class QueueService
         });
 
         // Fire Broadcast Events
-        event(new ChatAssigned($chat->id, $agent->id));
+        event(new ChatAssigned($chat, $agent));
         event(new AgentLoadUpdated($agent->id));
     }
 

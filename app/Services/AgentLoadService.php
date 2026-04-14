@@ -153,7 +153,7 @@ class AgentLoadService
     {
         return User::find($agentId)
             ?->assignedChats()
-            ->whereIn('status', ['open', 'in_progress'])
+            ->whereIn('status', ['assigned', 'active', 'transferred'])
             ->count() ?? 0;
     }
 }

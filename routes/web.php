@@ -133,6 +133,10 @@ Route::prefix('admin')
         Route::delete('/agents/{id}', [\App\Http\Controllers\Admin\AgentController::class, 'destroy'])
             ->name('agents.destroy');
 
+        // Queue
+        Route::get('/queue', [\App\Http\Controllers\Admin\QueueController::class, 'index'])
+            ->name('queue.index');
+
         // Settings
         Route::get('/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'index'])
             ->name('settings.index');

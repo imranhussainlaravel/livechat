@@ -95,7 +95,8 @@ class ChatService
                 'status'            => ChatStatus::ACTIVE->value,
             ]);
 
-            $this->systemMessage($chatId, 'Agent has joined the conversation.');
+            $agent = \App\Models\User::find($agentId);
+            $this->systemMessage($chatId, "{$agent->name} has joined the conversation.");
             $this->activity->log($agentId, 'chat.assigned', 'Chat', $chatId);
 
             $chat = $chat->fresh(['visitor', 'agent']);
@@ -149,8 +150,8 @@ class ChatService
      * Transition chat to a new status with full flow validation.
      *
      * Status flow:
-     *   pending → open → in_progress → solved → closed
-     *   open/in_progress ↔ followup
+     *   pending → assigned → active → solved → closed
+     *   assigned/active ↔ followup
      *
      * @throws InvalidArgumentException on invalid transition
      */
@@ -235,7 +236,10 @@ class ChatService
                 'reason'        => $dto->reason,
             ]);
 
-            $this->systemMessage($dto->chatId, 'Chat has been transferred to another agent.');
+            $fromAgent = \App\Models\User::find($dto->fromAgentId);
+            $toAgent = \App\Models\User::find($dto->toAgentId);
+            $this->systemMessage($dto->chatId, "Chat has been transferred from {$fromAgent->name} to {$toAgent->name}.");
+
             $this->activity->log($dto->fromAgentId, 'chat.transferred', 'Chat', $dto->chatId, [
                 'to_agent_id' => $dto->toAgentId,
             ]);

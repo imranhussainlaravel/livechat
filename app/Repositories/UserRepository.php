@@ -33,7 +33,7 @@ class UserRepository implements UserRepositoryInterface
     {
         return User::where('role', UserRole::AGENT)
             ->where('status', 'online')
-            ->withCount(['assignedChats' => fn($q) => $q->whereIn('status', ['open', 'in_progress'])])
+            ->withCount(['assignedChats' => fn($q) => $q->whereIn('status', ['assigned', 'active', 'transferred'])])
             ->having('assigned_chats_count', '<', \DB::raw('max_chats'))
             ->orderBy('assigned_chats_count')
             ->get();

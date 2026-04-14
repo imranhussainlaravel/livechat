@@ -56,17 +56,30 @@
         <div id="messages-container" class="flex-1 overflow-y-auto p-6 space-y-6 bg-white">
             @forelse($messages as $msg)
             @php
-            $isAgent = $msg->sender_type === 'agent';
-            $isSystem = $msg->sender_type === 'system';
+            $senderType = $msg->sender_type->value ?? $msg->sender_type;
+            $isAgent = $senderType === 'agent';
+            $isSystem = in_array($senderType, ['system', 'bot']);
             @endphp
 
+            @if($isSystem)
+            <div class="flex items-center justify-center my-2">
+                <div class="flex items-center gap-4 w-full">
+                    <div class="flex-1 h-px bg-gray-100"></div>
+                    <span class="px-3 py-1 bg-gray-50 rounded-full text-[11px] font-medium text-gray-400 uppercase tracking-wider whitespace-nowrap">
+                        {{ $msg->message }}
+                    </span>
+                    <div class="flex-1 h-px bg-gray-100"></div>
+                </div>
+            </div>
+            @else
             <x-chat-message
                 :isAgent="$isAgent"
-                :isBot="$isSystem"
+                :isBot="false"
                 :isMine="$isAgent && $msg->sender_id === auth()->id()"
-                :senderName="$isSystem ? 'System' : ($isAgent ? ($msg->sender->name ?? 'Agent') : ($chat->visitor->name ?? 'Visitor'))"
+                :senderName="$isAgent ? ($msg->sender->name ?? 'Agent') : ($chat->visitor->name ?? 'Visitor')"
                 :message="$msg->message"
                 :time="$msg->created_at->format('g:i A')" />
+            @endif
             @empty
             <div class="h-full flex flex-col items-center justify-center text-gray-400">
                 <svg class="w-12 h-12 mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
