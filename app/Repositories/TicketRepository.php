@@ -29,4 +29,19 @@ class TicketRepository implements TicketRepositoryInterface
 
         return $ticket->fresh();
     }
+
+    public function paginate(int $perPage = 15, array $filters = [])
+    {
+        $query = Ticket::query()->with(['chat.visitor', 'agent'])->latest();
+
+        if (isset($filters['agent_id'])) {
+            $query->where('agent_id', $filters['agent_id']);
+        }
+
+        if (isset($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        return $query->paginate($perPage);
+    }
 }

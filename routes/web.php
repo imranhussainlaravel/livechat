@@ -90,6 +90,8 @@ Route::prefix('agent')
             ->name('followups.cancel');
 
         // Tickets
+        Route::get('/tickets', [\App\Http\Controllers\Agent\TicketController::class, 'index'])
+            ->name('tickets.index');
         Route::post('/tickets', [\App\Http\Controllers\Agent\TicketController::class, 'store'])
             ->name('tickets.store');
         Route::patch('/tickets/{id}', [\App\Http\Controllers\Agent\TicketController::class, 'update'])
@@ -146,4 +148,8 @@ Route::prefix('admin')
         // Reports
         Route::get('/reports', [\App\Http\Controllers\Admin\ReportsController::class, 'index'])
             ->name('reports.index');
+
+        // Tickets
+        Route::get('/tickets', [\App\Http\Controllers\Admin\TicketController::class, 'index'])
+            ->name('tickets.index');
     });

@@ -9,7 +9,19 @@ use Illuminate\Http\Request;
 
 class TicketController extends Controller
 {
-    public function __construct(private TicketService $service) {}
+    public function __construct(
+        private TicketService $service,
+        private \App\Repositories\Contracts\TicketRepositoryInterface $tickets
+    ) {}
+
+    /**
+     * GET /agent/tickets — List all tickets for the agent.
+     */
+    public function index(Request $request)
+    {
+        $tickets = $this->tickets->paginate(15, ['agent_id' => $request->user()->id]);
+        return view('agent.tickets.index', compact('tickets'));
+    }
 
     /**
      * POST /agent/tickets — Create a ticket from a chat.
