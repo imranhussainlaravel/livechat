@@ -29,5 +29,18 @@ class AppServiceProvider extends ServiceProvider
         \Illuminate\Support\Facades\RateLimiter::for('chat', function (\Illuminate\Http\Request $request) {
             return \Illuminate\Cache\RateLimiting\Limit::perMinute(20)->by($request->ip());
         });
+        // Shared Data for sidebar/header (Internal Messages)
+        \Illuminate\Support\Facades\View::composer(['components.sidebar', 'components.header'], function ($view) {
+            if (auth()->check()) {
+                $unreadAgents = \App\Models\User::whereHas('sentInternalMessages', function($q) {
+                    $q->where('receiver_id', auth()->id())->where('is_read', false);
+                })->withCount(['sentInternalMessages as unread_count' => function($q) {
+                    $q->where('receiver_id', auth()->id())->where('is_read', false);
+                }])->get();
+                
+                $view->with('unreadAgents', $unreadAgents);
+                $view->with('totalUnreadInternal', $unreadAgents->sum('unread_count'));
+            }
+        });
     }
 }

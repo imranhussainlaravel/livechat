@@ -61,6 +61,16 @@ class User extends Authenticatable
         return $this->hasMany(Ticket::class, 'agent_id');
     }
 
+    public function sentInternalMessages(): HasMany
+    {
+        return $this->hasMany(InternalMessage::class, 'sender_id');
+    }
+
+    public function receivedInternalMessages(): HasMany
+    {
+        return $this->hasMany(InternalMessage::class, 'receiver_id');
+    }
+
     /* ------------------------------------------------------------------ */
     /*  Helpers                                                            */
     /* ------------------------------------------------------------------ */

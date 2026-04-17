@@ -102,6 +102,14 @@ Route::prefix('agent')
             ->name('tickets.markNotInterested');
         Route::post('/tickets/{id}/quotation', [\App\Http\Controllers\Agent\TicketController::class, 'sendQuotation'])
             ->name('tickets.sendQuotation');
+
+        // Internal Agent Chat
+        Route::get('/other-agents', [\App\Http\Controllers\Agent\AgentChatController::class, 'index'])
+            ->name('agents.index');
+        Route::get('/other-agents/{id}', [\App\Http\Controllers\Agent\AgentChatController::class, 'show'])
+            ->name('agents.show');
+        Route::post('/other-agents/{id}/message', [\App\Http\Controllers\Agent\AgentChatController::class, 'store'])
+            ->name('agents.message');
     });
 
 /*
