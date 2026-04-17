@@ -40,7 +40,7 @@ class TicketController extends Controller
     public function update(Request $request, int $id)
     {
         $data = $request->validate([
-            'status'         => 'sometimes|in:interested,not_interested',
+            'status'         => 'sometimes|in:pending,interested,not_interested',
             'quotation_sent' => 'sometimes|boolean',
             'amount'         => 'nullable|numeric|min:0',
             'notes'          => 'nullable|string|max:2000',

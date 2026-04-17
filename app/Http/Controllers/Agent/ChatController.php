@@ -136,17 +136,28 @@ class ChatController extends Controller
     {
         $request->validate([
             'status' => 'required|in:pending,assigned,active,closed,transferred',
+            'priority' => 'sometimes|in:low,normal,high',
         ]);
 
         try {
-            $newStatus = ChatStatus::from($request->status);
-            $this->chatService->updateStatus($id, $newStatus, $request->user()->id);
-
-            if ($request->expectsJson()) {
-                return response()->json(['message' => "Chat status updated to {$newStatus->label()}."]);
+            $chat = $this->chats->findById($id);
+            
+            // 1. Update Priority if provided
+            if ($request->has('priority')) {
+                $chat->update(['priority' => $request->priority]);
             }
 
-            return back()->with('success', "Chat status updated to {$newStatus->label()}.");
+            // 2. Update Status if it has changed
+            $newStatus = ChatStatus::from($request->status);
+            if ($chat->status !== $newStatus) {
+                $this->chatService->updateStatus($id, $newStatus, $request->user()->id);
+            }
+
+            if ($request->expectsJson()) {
+                return response()->json(['message' => "Chat updated successfully."]);
+            }
+
+            return back()->with('success', "Chat updated successfully.");
         } catch (InvalidArgumentException $e) {
             if ($request->expectsJson()) {
                 return response()->json(['message' => $e->getMessage()], 422);
@@ -190,11 +201,7 @@ class ChatController extends Controller
         $visitor = $chat->visitor;
 
         $metadata = $visitor->metadata ?? [];
-        $metadata['notes'][] = [
-            'agent_id'   => $request->user()->id,
-            'note'       => $request->note,
-            'created_at' => now()->toIso8601String(),
-        ];
+        $metadata['internal_note'] = $request->note;
 
         $visitor->update(['metadata' => $metadata]);
         $this->activity->log($request->user()->id, 'visitor.note_added', 'Visitor', $visitor->id);

@@ -72,7 +72,10 @@ class AgentQueueController extends Controller
             });
 
             if ($request->expectsJson()) {
-                return response()->json(['message' => 'Chat picked successfully.']);
+                return response()->json([
+                    'message'  => 'You have joined the chat.',
+                    'redirect' => route('agent.chats.show', $conversation_id)
+                ]);
             }
 
             return redirect()->route('agent.chats.show', $conversation_id)->with('success', 'You have joined the chat.');

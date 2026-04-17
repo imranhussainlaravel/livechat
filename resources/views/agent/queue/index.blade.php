@@ -46,7 +46,7 @@
             </div>
 
             <div class="flex items-center gap-3 shrink-0">
-                <form method="POST" action="{{ route('agent.queue.join', $chat->id) }}">
+                <form method="POST" action="{{ route('agent.queue.join', $chat->id) }}" data-ajax-form>
                     @csrf
                     <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all transform active:scale-95">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

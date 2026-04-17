@@ -130,11 +130,14 @@
             </svg>
             Internal Notes
         </h4>
+
+        <div id="internal-notes-list" class="hidden"></div>
+
         <form method="POST" action="{{ route('agent.chats.addVisitorNote', $chat->id) }}" data-ajax-form>
             @csrf
-            <textarea name="note" rows="2" placeholder="Add a private note..." class="block w-full rounded-md border-0 py-1 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 text-xs mb-2"></textarea>
+            <textarea name="note" rows="4" placeholder="Add internal visitor notes here..." class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 text-xs mb-2">{{ $chat->visitor->metadata['internal_note'] ?? '' }}</textarea>
             <button type="submit" class="w-full rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
-                Save Note
+                Update Note
             </button>
         </form>
     </div>

@@ -1,3 +1,9 @@
+@php
+    $pendingQueueCount = \App\Models\Chat::where('queue_status', \App\Enums\QueueStatus::QUEUED)
+        ->whereNull('assigned_agent_id')
+        ->where('status', \App\Enums\ChatStatus::PENDING)
+        ->count();
+@endphp
 <div class="w-56 flex-shrink-0 bg-gray-900 border-r text-gray-200 border-gray-800 flex flex-col">
     <div class="h-12 flex items-center justify-center border-b border-gray-800">
         <span class="text-lg font-bold italic tracking-wide text-white">{{ app(\App\Services\SettingsService::class)->get('widget_name', 'LiveChat') }}</span>
@@ -31,6 +37,11 @@
                         </svg>
                         <span class="text-sm">Pending Queue</span>
                     </div>
+                    @if($pendingQueueCount > 0)
+                    <span class="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500 text-white leading-none">
+                        {{ $pendingQueueCount }}
+                    </span>
+                    @endif
                 </a>
             </li>
             <li>
@@ -94,6 +105,11 @@
                         </svg>
                         <span class="text-sm">Pending Queue</span>
                     </div>
+                    @if($pendingQueueCount > 0)
+                    <span class="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500 text-white leading-none">
+                        {{ $pendingQueueCount }}
+                    </span>
+                    @endif
                 </a>
             </li>
             <li>
