@@ -33,7 +33,7 @@
             </svg>
             Chat Status
         </h4>
-        <form method="POST" action="{{ route('agent.chats.updateStatus', $chat->id) }}">
+        <form method="POST" action="{{ route('agent.chats.updateStatus', $chat->id) }}" data-ajax-form>
             @csrf
             @method('PATCH')
             <div class="flex flex-col gap-3">
@@ -75,7 +75,7 @@
             </svg>
             Schedule Follow-up
         </h4>
-        <form method="POST" action="{{ route('agent.followups.store') }}" class="space-y-3">
+        <form method="POST" action="{{ route('agent.followups.store') }}" class="space-y-3" data-ajax-form>
             @csrf
             <input type="hidden" name="chat_id" value="{{ $chat->id }}">
             <div>
@@ -100,7 +100,7 @@
             </svg>
             Transfer Chat
         </h4>
-        <form method="POST" action="{{ route('agent.chats.transfer', $chat->id) }}" class="space-y-3">
+        <form method="POST" action="{{ route('agent.chats.transfer', $chat->id) }}" class="space-y-3" data-ajax-form>
             @csrf
             <div>
                 <select name="to_agent_id" required class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6">
@@ -130,7 +130,7 @@
             </svg>
             Internal Notes
         </h4>
-        <form method="POST" action="{{ route('agent.chats.addVisitorNote', $chat->id) }}">
+        <form method="POST" action="{{ route('agent.chats.addVisitorNote', $chat->id) }}" data-ajax-form>
             @csrf
             <textarea name="note" rows="2" placeholder="Add a private note..." class="block w-full rounded-md border-0 py-1 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 text-xs mb-2"></textarea>
             <button type="submit" class="w-full rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
@@ -153,7 +153,7 @@
 
         @if(!$ticket)
         <p class="text-xs text-green-700 mb-3">Convert this chat into a sales/support ticket to send quotes.</p>
-        <form method="POST" action="{{ route('agent.tickets.store') }}">
+        <form method="POST" action="{{ route('agent.tickets.store') }}" data-ajax-form>
             @csrf
             <input type="hidden" name="chat_id" value="{{ $chat->id }}">
             <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700">
@@ -163,10 +163,10 @@
         @else
         <div class="mb-3">
             <p class="text-xs font-medium text-green-800">Assigned Ticket #{{ $ticket->id }}</p>
-            <form method="POST" action="{{ route('agent.tickets.update', $ticket->id) }}" class="mt-2 flex gap-2">
+            <form method="POST" action="{{ route('agent.tickets.update', $ticket->id) }}" class="mt-2 flex gap-2" data-ajax-form>
                 @csrf
                 @method('PATCH')
-                <select name="status" onchange="this.form.submit()" class="block w-full rounded-md border-0 py-1 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-green-600 sm:text-xs">
+                <select name="status" onchange="this.form.requestSubmit()" class="block w-full rounded-md border-0 py-1 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-green-600 sm:text-xs">
                     <option value="pending" {{ $ticket->status->value === 'pending' ? 'selected' : '' }}>Pending</option>
                     <option value="interested" {{ $ticket->status->value === 'interested' ? 'selected' : '' }}>Interested</option>
                     <option value="not_interested" {{ $ticket->status->value === 'not_interested' ? 'selected' : '' }}>Not Interested</option>

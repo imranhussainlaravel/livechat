@@ -120,7 +120,10 @@ class ChatController extends Controller
         $this->chatService->transferChat($dto);
 
         if ($request->expectsJson()) {
-            return response()->json(['message' => 'Chat transferred.']);
+            return response()->json([
+                'message'  => 'Chat transferred.',
+                'redirect' => route('agent.chats.index')
+            ]);
         }
 
         return redirect()->route('agent.chats.index')->with('success', 'Chat transferred.');
@@ -161,7 +164,10 @@ class ChatController extends Controller
             $this->chatService->closeChat($id, $request->user()->id);
 
             if ($request->expectsJson()) {
-                return response()->json(['message' => 'Chat closed.']);
+                return response()->json([
+                    'message'  => 'Chat closed.',
+                    'redirect' => route('agent.chats.index')
+                ]);
             }
 
             return redirect()->route('agent.chats.index')->with('success', 'Chat closed.');

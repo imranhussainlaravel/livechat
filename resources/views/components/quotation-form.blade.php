@@ -7,7 +7,7 @@
     </button>
 
     <div x-show="open" class="mt-3 bg-gray-50 p-3 rounded-md" x-collapse>
-        <form method="POST" action="{{ route('agent.tickets.sendQuotation', $ticketId) }}">
+        <form method="POST" action="{{ route('agent.tickets.sendQuotation', $ticketId) }}" data-ajax-form>
             @csrf
             <div class="mb-3">
                 <label for="amount" class="block text-xs font-medium text-gray-700">Amount ($)</label>
