@@ -43,9 +43,10 @@ class ChatAssigned implements ShouldBroadcast
     public function broadcastWith(): array
     {
         return [
-            'chat_id'  => $this->chat->id,
-            'agent_id' => $this->agent->id,
-            'status'   => $this->chat->status,
+            'chat_id'    => $this->chat->id,
+            'agent_id'   => $this->agent->id,
+            'agent_name' => $this->agent->name,
+            'status'     => $this->chat->status,
         ];
     }
 }

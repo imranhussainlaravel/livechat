@@ -31,10 +31,28 @@ class ChatController extends Controller
         $dto  = StartChatDTO::fromRequest($request->validated());
         $chat = $this->chatService->startChat($dto);
 
+        // Load relations for the resource
+        $chat->load(['visitor', 'agent']);
+
         return response()->json([
+            'success' => true,
             'message' => 'Chat started.',
             'data'    => new ChatResource($chat),
         ], 201);
+    }
+
+    /**
+     * GET /api/chat/{id}/details — Get chat details for session recovery.
+     */
+    public function details(int $id): JsonResponse
+    {
+        $chat = $this->chatService->getChat($id);
+        $chat->load(['visitor', 'agent']);
+
+        return response()->json([
+            'success' => true,
+            'data'    => new ChatResource($chat),
+        ]);
     }
 
     /**

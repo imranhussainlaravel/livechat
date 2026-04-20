@@ -30,6 +30,14 @@ class ChatService
         private ActivityService            $activity,
     ) {}
 
+    /**
+     * Retrieve a chat by ID.
+     */
+    public function getChat(int $id): \App\Models\Chat
+    {
+        return $this->chats->findById($id);
+    }
+
     /* ================================================================== */
     /*  1. START CHAT                                                      */
     /* ================================================================== */
