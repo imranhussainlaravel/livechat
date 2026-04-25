@@ -14,14 +14,25 @@ use App\Models\Chat;
 */
 
 Broadcast::channel('chat.{chatId}', function ($user, int $chatId) {
-    $chat = Chat::find($chatId);
+    $chat = Chat::with('visitor')->find($chatId);
 
     if (! $chat) {
         return false;
     }
 
-    // Agents assigned to this chat, or admins, can listen
-    return $user->isAdmin() || $chat->assigned_agent_id === $user->id;
+    // 1. Authenticated Agents/Admins
+    if ($user) {
+        return $user->isAdmin() || $chat->assigned_agent_id === $user->id;
+    }
+
+    // 2. Public Visitors (Verified by Session Token)
+    $sessionToken = request()->header('X-Session-Token');
+    
+    if ($sessionToken && $chat->visitor && $chat->visitor->session_token === $sessionToken) {
+        return true;
+    }
+
+    return false;
 });
 
 /*

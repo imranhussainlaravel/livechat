@@ -42,10 +42,34 @@ class ChatController extends Controller
     }
 
     /**
-     * GET /api/chat/{id}/details — Get chat details for session recovery.
+     * GET /api/chat/recover — Recover session by token.
      */
-    public function details(int $id): JsonResponse
+    public function recover(Request $request): JsonResponse
     {
+        $request->validate(['session_token' => 'required|string']);
+        
+        $chat = $this->chatService->recoverSession($request->query('session_token'));
+        
+        if (!$chat) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No session found.',
+                'data'    => null
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data'    => new ChatResource($chat),
+        ]);
+    }
+
+    /**
+     * GET /api/chat/details — Get chat details.
+     */
+    public function details(Request $request): JsonResponse
+    {
+        $id = $request->input('chat_id');
         $chat = $this->chatService->getChat($id);
         $chat->load(['visitor', 'agent']);
 
@@ -56,10 +80,11 @@ class ChatController extends Controller
     }
 
     /**
-     * POST /api/chat/{id}/send — Visitor sends a message.
+     * POST /api/chat/send — Visitor sends a message.
      */
-    public function send(SendMessageRequest $request, int $id): JsonResponse
+    public function send(SendMessageRequest $request): JsonResponse
     {
+        $id = $request->validated('chat_id');
         $dto = new SendMessageDTO(
             chatId: $id,
             senderType: MessageSenderType::VISITOR->value,
@@ -77,10 +102,11 @@ class ChatController extends Controller
     }
 
     /**
-     * GET /api/chat/{id}/messages — Get chat messages (visitor).
+     * GET /api/chat/messages — Get chat messages (visitor).
      */
-    public function messages(int $id): JsonResponse
+    public function messages(Request $request): JsonResponse
     {
+        $id = $request->query('chat_id');
         $messages = $this->messages->getByChatId($id);
 
         return response()->json([
@@ -94,11 +120,13 @@ class ChatController extends Controller
     }
 
     /**
-     * POST /api/chat/{id}/typing — Visitor broadcasts typing indicator.
+     * POST /api/chat/typing — Visitor broadcasts typing indicator.
      */
-    public function typing(Request $request, int $id): JsonResponse
+    public function typing(Request $request): JsonResponse
     {
+        $id = $request->input('chat_id');
         $request->validate([
+            'chat_id'      => 'required',
             'is_typing'    => 'required|boolean',
             'visitor_name' => 'nullable|string|max:255',
         ]);

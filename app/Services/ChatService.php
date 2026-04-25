@@ -38,6 +38,22 @@ class ChatService
         return $this->chats->findById($id);
     }
 
+    /**
+     * Find the most recent active chat for a session token.
+     */
+    public function recoverSession(string $token): ?Chat
+    {
+        $visitor = Visitor::where('session_token', $token)->first();
+        if (!$visitor) {
+            return null;
+        }
+
+        // Return the most recent chat that isn't closed, or just the most recent one
+        return $visitor->chats()
+            ->orderBy('created_at', 'desc')
+            ->first();
+    }
+
     /* ================================================================== */
     /*  1. START CHAT                                                      */
     /* ================================================================== */
@@ -145,6 +161,7 @@ class ChatService
             ]);
 
             event(new MessageSent($message->load('chat')));
+            event(new \App\Events\NewMessage($message));
 
             return $message;
         });

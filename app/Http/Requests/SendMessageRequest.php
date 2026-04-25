@@ -14,6 +14,7 @@ class SendMessageRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'chat_id'  => 'required|integer|exists:chats,id',
             'message'  => 'required|string|max:5000',
             'metadata' => 'nullable|array',
         ];
