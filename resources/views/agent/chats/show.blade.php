@@ -205,6 +205,20 @@
             scrollToBottom(true);
         }
 
+        // ---- APPEND VISITOR MESSAGE BUBBLE ----
+        function appendVisitorMessage(text, createdAt) {
+            var escaped = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+            escaped = escaped.replace(/\n/g, '<br>');
+            var time = createdAt ? formatTime(new Date(createdAt)) : formatTime(new Date());
+            var html = '<div class="flex items-start mb-3">' +
+                '<div class="flex flex-col items-start max-w-[85%]">' +
+                '<span class="text-[10px] text-gray-400 mb-0.5 px-1">' + time + '</span>' +
+                '<div class="px-3 py-1.5 rounded-2xl shadow-sm text-[13px] leading-relaxed bg-white text-gray-800 border border-gray-100 rounded-tl-sm">' +
+                escaped + '</div></div></div>';
+            container.insertAdjacentHTML('beforeend', html);
+            scrollToBottom(true);
+        }
+
         // ---- SEND MESSAGE VIA AJAX ----
         function sendMessage() {
             if (!textarea || !form) return;
@@ -226,7 +240,10 @@
                     'X-CSRF-TOKEN': csrfToken,
                     'X-Requested-With': 'XMLHttpRequest'
                 },
-                body: JSON.stringify({ message: msg })
+                body: JSON.stringify({ 
+                    message: msg,
+                    chat_id: {{ $chat->id }}
+                })
             }).catch(function(err) {
                 console.error('Send error:', err);
             });
@@ -284,6 +301,13 @@
             var chatId = {{ $chat->id }};
             var currentUserId = {{ auth()->id() }};
 
+            window.Echo.private('chat.' + chatId)
+                .listen('.message.new', function(e) {
+                    if (e.sender_type === 'visitor') {
+                        appendVisitorMessage(e.message, e.created_at);
+                    }
+                });
+
             window.Echo.join('chat-room.' + chatId)
                 .here(function(users) {})
                 .joining(function(user) {
@@ -294,6 +318,17 @@
                 .leaving(function(user) {
                     if (user.id !== currentUserId && user.role === 'agent') {
                         appendSystemMessage('Agent ' + user.name + ' left the chat.');
+                    }
+                })
+                .listen('.typing.indicator', function(e) {
+                    var typingDiv = document.getElementById('typing-indicator');
+                    if (!typingDiv) return;
+                    if (e.sender_type === 'visitor') {
+                        if (e.is_typing) {
+                            typingDiv.classList.remove('hidden');
+                        } else {
+                            typingDiv.classList.add('hidden');
+                        }
                     }
                 })
                 .listen('AnotherAgentJoined', function(e) {

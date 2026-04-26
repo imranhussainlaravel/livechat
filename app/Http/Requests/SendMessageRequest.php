@@ -19,4 +19,16 @@ class SendMessageRequest extends FormRequest
             'metadata' => 'nullable|array',
         ];
     }
+
+    /**
+     * Merge route parameter 'id' into 'chat_id' if missing.
+     */
+    protected function prepareForValidation()
+    {
+        if ($this->route('id') && !$this->has('chat_id')) {
+            $this->merge([
+                'chat_id' => $this->route('id'),
+            ]);
+        }
+    }
 }
