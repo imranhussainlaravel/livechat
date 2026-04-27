@@ -27,30 +27,27 @@ Route::prefix('chat')->middleware('throttle:chat')->group(function () {
 });
 
 /**
- * Custom Broadcast Auth for Visitors (unauthenticated) & Agents (authenticated)
+ * Custom Broadcast Auth for Visitors & Agents
  *
- * Laravel's default Broadcast::auth() requires an authenticated user,
- * which causes a 403 for unauthenticated widget visitors.
- * This custom endpoint handles both cases:
- *   - Authenticated agents/admins → delegate to Broadcast::auth()
- *   - Unauthenticated visitors   → verify via X-Session-Token header
+ * Authenticated agents → Broadcast::auth()
+ * Unauthenticated visitors → verify via X-Session-Token, then Pusher auth
  */
 Route::post('/broadcasting/auth', function (\Illuminate\Http\Request $request) {
-    // If the user is authenticated (agent/admin), use default auth
+    // Authenticated agent/admin
     if ($request->user()) {
         return Broadcast::auth($request);
     }
 
-    // For unauthenticated visitors: manually authorize using session token
+    // Visitor auth via session token
     $sessionToken = $request->header('X-Session-Token');
-    $channelName  = $request->input('channel_name'); // e.g. "private-chat.123"
+    $channelName  = $request->input('channel_name');
     $socketId     = $request->input('socket_id');
 
     if (!$sessionToken || !$channelName || !$socketId) {
         return response()->json(['message' => 'Unauthorized'], 403);
     }
 
-    // Extract chat ID from channel name (e.g. "private-chat.123" → 123)
+    // Extract chat ID from "private-chat.123"
     if (!preg_match('/^private-chat\.(\d+)$/', $channelName, $matches)) {
         return response()->json(['message' => 'Invalid channel'], 403);
     }
@@ -62,14 +59,16 @@ Route::post('/broadcasting/auth', function (\Illuminate\Http\Request $request) {
         return response()->json(['message' => 'Unauthorized'], 403);
     }
 
-    // Visitor is verified — generate auth signature (Pusher protocol)
-    $key    = config('broadcasting.connections.reverb.key');
-    $secret = config('broadcasting.connections.reverb.secret');
-    $stringToSign = $socketId . ':' . $channelName;
-    $signature    = hash_hmac('sha256', $stringToSign, $secret);
+    // Generate Pusher auth signature
+    $pusher = new \Pusher\Pusher(
+        config('broadcasting.connections.pusher.key'),
+        config('broadcasting.connections.pusher.secret'),
+        config('broadcasting.connections.pusher.app_id'),
+    );
 
-    return response()->json([
-        'auth' => $key . ':' . $signature,
+    return response($pusher->authorizeChannel($channelName, $socketId), 200, [
+        'Content-Type' => 'application/json',
     ]);
 });
+
 
