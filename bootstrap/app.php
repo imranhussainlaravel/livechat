@@ -25,10 +25,6 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Redirect unauthenticated users to login page (web) or return 401 (api)
         $middleware->redirectGuestsTo('/login');
-
-        $middleware->validateCsrfTokens(except: [
-            'api/broadcasting/auth',
-        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(function (\Illuminate\Http\Request $request, \Throwable $e) {
