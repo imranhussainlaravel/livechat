@@ -315,7 +315,7 @@
                 key: '54ff5280f5ead0e4ec9f',
                 cluster: 'mt1',
                 forceTLS: true,
-                authEndpoint: '/api/broadcasting/auth',
+                authEndpoint: '/broadcasting/auth',
                 auth: {
                     headers: {
                         'X-CSRF-TOKEN': csrfToken
