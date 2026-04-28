@@ -303,8 +303,8 @@
         });
 
         Promise.all([
-            loadScript('https://js.pusher.com/8.2.0/pusher.min.js'),
-            loadScript('https://cdn.jsdelivr.net/npm/laravel-echo@1.15.3/dist/echo.iife.js')
+            loadScript('https://unpkg.com/pusher-js@8.3.0/dist/web/pusher.min.js'),
+            loadScript('https://unpkg.com/laravel-echo@1.15.3/dist/echo.iife.js')
         ]).then(() => {
             if (typeof window.Echo !== 'undefined' && window.Echo.disconnect) {
                 window.Echo.disconnect();

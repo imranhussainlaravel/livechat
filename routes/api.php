@@ -59,6 +59,10 @@ Route::post('/broadcasting/auth', function (\Illuminate\Http\Request $request) {
         config('broadcasting.connections.pusher.key'),
         config('broadcasting.connections.pusher.secret'),
         config('broadcasting.connections.pusher.app_id'),
+        [
+            'cluster' => config('broadcasting.connections.pusher.options.cluster'),
+            'useTLS' => true
+        ]
     );
 
     return response($pusher->authorizeChannel($channelName, $socketId), 200, [
