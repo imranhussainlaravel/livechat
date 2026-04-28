@@ -33,12 +33,12 @@ Route::prefix('chat')->middleware('throttle:chat')->group(function () {
  * Unauthenticated visitors → verify via X-Session-Token, then Pusher auth
  */
 Route::post('/broadcasting/auth', function (\Illuminate\Http\Request $request) {
-    // Authenticated agent/admin
+    // 1. Authenticated agent/admin (uses session)
     if ($request->user()) {
         return Broadcast::auth($request);
     }
 
-    // Visitor auth via session token
+    // 2. Visitor auth via session token (uses header)
     $sessionToken = $request->header('X-Session-Token');
     $channelName  = $request->input('channel_name');
     $socketId     = $request->input('socket_id');
@@ -59,7 +59,7 @@ Route::post('/broadcasting/auth', function (\Illuminate\Http\Request $request) {
         return response()->json(['message' => 'Unauthorized'], 403);
     }
 
-    // Generate Pusher auth signature
+    // Generate Pusher auth signature for visitors
     $pusher = new \Pusher\Pusher(
         config('broadcasting.connections.pusher.key'),
         config('broadcasting.connections.pusher.secret'),
@@ -69,6 +69,7 @@ Route::post('/broadcasting/auth', function (\Illuminate\Http\Request $request) {
     return response($pusher->authorizeChannel($channelName, $socketId), 200, [
         'Content-Type' => 'application/json',
     ]);
-});
+})->middleware(['web']);
+
 
 
