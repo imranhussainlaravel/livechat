@@ -297,38 +297,12 @@
         }
 
         // ---- Laravel Echo / Real-Time Events ----
-        // We load Echo/Pusher from CDN to ensure we have the constructors if app.js doesn't expose them
-        const loadScript = (src) => new Promise(resolve => {
-            const s = document.createElement('script'); s.src = src; s.onload = resolve; document.head.appendChild(s);
-        });
-
-        Promise.all([
-            loadScript('https://js.pusher.com/8.2.0/pusher.min.js'),
-            loadScript('https://cdn.jsdelivr.net/npm/laravel-echo@1.15.3/dist/echo.iife.js')
-        ]).then(() => {
-            if (typeof window.Echo !== 'undefined' && window.Echo.disconnect) {
-                window.Echo.disconnect();
-            }
-
-            window.Echo = new window.Echo({
-                broadcaster: 'pusher',
-                key: '54ff5280f5ead0e4ec9f',
-                cluster: 'mt1',
-                forceTLS: true,
-                authEndpoint: '/api/broadcasting/auth',
-                auth: {
-                    headers: {
-                        'X-CSRF-TOKEN': csrfToken
-                    }
-                }
-            });
-
+        if (typeof window.Echo !== 'undefined') {
             var chatId = {{ $chat->id }};
             var currentUserId = {{ auth()->id() }};
 
             window.Echo.private('chat.' + chatId)
                 .listen('.message.new', function(e) {
-                    console.log("AGENT RECEIVED WS MESSAGE:", e);
                     if (e.sender_type === 'visitor') {
                         appendVisitorMessage(e.message, e.created_at);
                     }
@@ -384,9 +358,8 @@
                 container.insertAdjacentHTML('beforeend', sysHtml);
                 scrollToBottom(true);
             }
-        });
+        }
     });
 </script>
 
 @endsection
-
