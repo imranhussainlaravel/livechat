@@ -298,6 +298,7 @@
 
         // ---- Laravel Echo / Real-Time Events ----
         // We load Echo/Pusher from CDN to ensure we have the constructors if app.js doesn't expose them
+        const oldEcho = window.Echo;
         const loadScript = (src) => new Promise(resolve => {
             const s = document.createElement('script'); s.src = src; s.onload = resolve; document.head.appendChild(s);
         });
@@ -306,8 +307,8 @@
             loadScript('https://unpkg.com/pusher-js@8.3.0/dist/web/pusher.min.js'),
             loadScript('https://unpkg.com/laravel-echo@1.15.3/dist/echo.iife.js')
         ]).then(() => {
-            if (typeof window.Echo !== 'undefined' && window.Echo.disconnect) {
-                window.Echo.disconnect();
+            if (oldEcho && typeof oldEcho.disconnect === 'function') {
+                oldEcho.disconnect();
             }
 
             window.Echo = new window.Echo({
