@@ -18,12 +18,15 @@ class ChatRepository implements ChatRepositoryInterface
         return Chat::with($relations)->findOrFail($id);
     }
 
-    public function getByStatus(string $status, int $perPage = 15)
+    public function getByStatus(?string $status, int $perPage = 15)
     {
-        return Chat::where('status', $status)
-            ->with(['visitor', 'agent'])
-            ->latest()
-            ->paginate($perPage);
+        $query = Chat::with(['visitor', 'agent']);
+        
+        if ($status && $status !== 'all') {
+            $query->where('status', $status);
+        }
+        
+        return $query->latest()->paginate($perPage);
     }
 
     public function getByAgent(int $agentId, array $filters = [])
@@ -31,7 +34,7 @@ class ChatRepository implements ChatRepositoryInterface
         $query = Chat::where('assigned_agent_id', $agentId)
             ->with(['visitor', 'messages' => fn($q) => $q->latest()->limit(1)]);
 
-        if (isset($filters['status'])) {
+        if (isset($filters['status']) && $filters['status'] !== 'all') {
             $query->where('status', $filters['status']);
         }
 

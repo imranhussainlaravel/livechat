@@ -2,16 +2,16 @@
 
 @section('content')
 <div class="mb-6">
-    <h1 class="text-2xl font-bold text-gray-900">Other Agents</h1>
+    <h1 class="text-2xl font-bold text-gray-100">Other Agents</h1>
     <p class="text-gray-500 mt-1">Chat with your colleagues and see their current status.</p>
 </div>
 
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
     @foreach($users as $user)
-    <div class="bg-white border border-gray-100 rounded-lg shadow-sm p-5 flex items-center justify-between hover:shadow-md transition-shadow">
+    <div class="bg-gray-900 border border-gray-800 rounded-lg shadow-sm p-5 flex items-center justify-between hover:shadow-md transition-shadow">
         <div class="flex items-center gap-4">
             <div class="relative">
-                <div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-lg font-bold text-gray-700">
+                <div class="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center text-lg font-bold text-gray-300">
                     {{ strtoupper(substr($user->name, 0, 1)) }}
                 </div>
                 <div class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 border-2 border-white rounded-full 
@@ -25,7 +25,7 @@
                 @endif
             </div>
             <div>
-                <h3 class="font-semibold text-gray-900">{{ $user->name }}</h3>
+                <h3 class="font-semibold text-gray-100">{{ $user->name }}</h3>
                 <p class="text-xs text-gray-500 capitalize">{{ $user->status }} • {{ $user->role->value ?? $user->role }}</p>
             </div>
         </div>

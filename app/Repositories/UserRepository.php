@@ -20,7 +20,8 @@ class UserRepository implements UserRepositoryInterface
 
     public function getAgents(array $filters = [])
     {
-        $query = User::where('role', UserRole::AGENT);
+        $roles = $filters['roles'] ?? [UserRole::AGENT];
+        $query = User::whereIn('role', (array) $roles);
 
         if (isset($filters['status'])) {
             $query->where('status', $filters['status']);

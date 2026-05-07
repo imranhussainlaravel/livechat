@@ -22,7 +22,7 @@ Broadcast::channel('chat.{chatId}', function ($user, int $chatId) {
 
     // 1. Authenticated Agents/Admins
     if ($user) {
-        return $user->isAdmin() || $chat->assigned_agent_id === $user->id;
+        return $user->isAdmin() || $user->isAgent();
     }
 
     // 2. Public Visitors (Verified by Session Token)
@@ -73,7 +73,7 @@ Broadcast::channel('chat-room.{chatId}', function ($user, int $chatId) {
         return false;
     }
 
-    if ($user->isAdmin() || $chat->assigned_agent_id === $user->id) {
+    if ($user->isAdmin() || $user->isAgent()) {
         return [
             'id'   => $user->id,
             'name' => $user->name,

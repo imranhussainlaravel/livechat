@@ -5,18 +5,18 @@
 
 <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
     <div>
-        <h1 class="text-2xl font-bold text-gray-900">Your Follow-ups</h1>
+        <h1 class="text-2xl font-bold text-gray-100">Your Follow-ups</h1>
         <p class="text-gray-500 mt-1">Manage scheduled follow-ups with visitors.</p>
     </div>
 </div>
 
-<div class="bg-white border border-gray-100 rounded-lg shadow-sm overflow-hidden">
-    <div class="divide-y divide-gray-100">
+<div class="bg-gray-900 border border-gray-800 rounded-lg shadow-sm overflow-hidden">
+    <div class="divide-y divide-gray-800">
         @forelse($followups as $followup)
-        <div class="flex flex-col sm:flex-row sm:items-center gap-4 px-6 py-4 hover:bg-gray-50 transition">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-4 px-6 py-4 hover:bg-gray-800 transition">
             <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-3 mb-1">
-                    <a href="{{ route('agent.chats.show', $followup->chat_id) }}" class="text-sm font-semibold text-blue-600 hover:text-blue-800 hover:underline">
+                    <a href="{{ route('agent.chats.show', $followup->chat_id) }}" class="text-sm font-semibold text-blue-600 hover:text-blue-300 hover:underline">
                         Chat #{{ $followup->chat_id }}
                     </a>
                     <span class="text-xs text-gray-500 flex items-center gap-1">
@@ -27,19 +27,19 @@
                     </span>
                 </div>
                 @if($followup->notes)
-                <p class="text-sm text-gray-600 mt-1">{{ $followup->notes }}</p>
+                <p class="text-sm text-gray-400 mt-1">{{ $followup->notes }}</p>
                 @endif
             </div>
 
             <div class="flex items-center gap-4 shrink-0 mt-3 sm:mt-0">
                 @php
                 $fStatusColors = [
-                'pending' => 'bg-yellow-100 text-yellow-800',
-                'completed' => 'bg-green-100 text-green-800',
-                'cancelled' => 'bg-gray-100 text-gray-800',
+                'pending' => 'bg-yellow-900/30 text-yellow-300',
+                'completed' => 'bg-green-900/30 text-green-300',
+                'cancelled' => 'bg-gray-800 text-gray-200',
                 ];
                 $statusValue = $followup->status->value ?? $followup->status;
-                $statusBg = $fStatusColors[$statusValue] ?? 'bg-gray-100 text-gray-800';
+                $statusBg = $fStatusColors[$statusValue] ?? 'bg-gray-800 text-gray-200';
                 @endphp
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $statusBg }}">
                     {{ ucfirst($statusValue) }}
@@ -55,7 +55,7 @@
                     </form>
                     <form method="POST" action="{{ route('agent.followups.cancel', $followup->id) }}">
                         @csrf @method('PATCH')
-                        <button type="submit" class="inline-flex items-center px-2.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                        <button type="submit" class="inline-flex items-center px-2.5 py-1.5 border border-gray-600 shadow-sm text-xs font-medium rounded text-gray-300 bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
                             Cancel
                         </button>
                     </form>

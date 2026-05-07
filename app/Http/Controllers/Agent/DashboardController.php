@@ -28,6 +28,8 @@ class DashboardController extends Controller
         $totalResolved = Chat::where('assigned_agent_id', $agentId)
             ->where('status', ChatStatus::CLOSED->value)
             ->count();
+            
+        $totalAssigned = Chat::where('assigned_agent_id', $agentId)->count();
 
         $avgResolutionTime = Chat::where('assigned_agent_id', $agentId)
             ->whereNotNull('ended_at')
@@ -48,15 +50,32 @@ class DashboardController extends Controller
             ->take(10)
             ->get();
 
+        // Graph data: Agent's messages sent in the last 7 days
+        $graphData = [
+            'labels' => [],
+            'values' => []
+        ];
+        
+        for ($i = 6; $i >= 0; $i--) {
+            $date = today()->subDays($i);
+            $graphData['labels'][] = $date->format('M d');
+            $graphData['values'][] = ChatMessage::where('sender_id', $agentId)
+                ->where('sender_type', MessageSenderType::AGENT->value)
+                ->whereDate('created_at', $date)
+                ->count();
+        }
+
         return view('agent.dashboard', [
             'metrics' => [
                 'active_chats'        => $activeChats,
                 'total_resolved'      => $totalResolved,
+                'total_assigned'      => $totalAssigned,
                 'avg_resolution_mins' => floor((float) $avgResolutionTime),
                 'messages_sent_today' => $messagesSentToday,
                 'pending_queue'       => $pendingChats,
             ],
             'recentChats' => $recentChats,
+            'graphData'   => $graphData,
         ]);
     }
 }

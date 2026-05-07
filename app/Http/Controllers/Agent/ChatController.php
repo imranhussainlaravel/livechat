@@ -55,16 +55,22 @@ class ChatController extends Controller
      */
     public function show(int $id)
     {
-        $chat = $this->chats->findWithRelations($id, ['visitor', 'agent']);
+        $chat = $this->chats->findWithRelations($id, ['visitor', 'agent', 'transfers']);
         $messages = app(MessageRepositoryInterface::class)->getByChatId($id);
 
-        // Get available agents for transfer dropdown
-        $agents = $this->users->getAgents(['status' => 'online', 'per_page' => 50]);
+        // Get available agents & admins for transfer dropdown
+        $agents = $this->users->getAgents([
+            'roles' => [\App\Enums\UserRole::AGENT, \App\Enums\UserRole::ADMIN],
+            'per_page' => 100
+        ]);
 
         // Get Interaction Timeline
         $timeline = app(\App\Repositories\Contracts\ActivityRepositoryInterface::class)->getByChat($id);
 
-        return view('agent.chats.show', compact('chat', 'messages', 'agents', 'timeline'));
+        // Identify the most recent previous agent who had this chat
+        $previousAgentId = $chat->transfers->last()?->from_agent_id;
+
+        return view('agent.chats.show', compact('chat', 'messages', 'agents', 'timeline', 'previousAgentId'));
     }
 
     /**
@@ -247,5 +253,29 @@ class ChatController extends Controller
     {
         event(new AgentLeftChat($id, $request->user()));
         return response()->json(['message' => 'Left chat.']);
+    }
+
+    /**
+     * PATCH /agent/visitor/{id} — Update visitor details.
+     */
+    public function updateVisitor(Request $request, int $id)
+    {
+        $request->validate([
+            'name' => 'nullable|string|max:255',
+            'email' => 'nullable|email|max:255',
+        ]);
+
+        $visitor = \App\Models\Visitor::findOrFail($id);
+        
+        $visitor->update([
+            'name' => $request->name,
+            'email' => $request->email,
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Visitor details updated.']);
+        }
+
+        return back()->with('success', 'Visitor details updated.');
     }
 }

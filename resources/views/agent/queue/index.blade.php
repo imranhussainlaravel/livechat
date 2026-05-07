@@ -5,27 +5,27 @@
 
 <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
     <div>
-        <h1 class="text-2xl font-bold text-gray-900">Incoming Requests</h1>
+        <h1 class="text-2xl font-bold text-gray-100">Incoming Requests</h1>
         <p class="text-gray-500 mt-1">New visitors waiting for help. Join a conversation to start chatting.</p>
     </div>
 </div>
 
-<div class="bg-white border border-gray-100 rounded-lg shadow-sm overflow-hidden">
-    <div class="divide-y divide-gray-100">
+<div class="bg-gray-900 border border-gray-800 rounded-lg shadow-sm overflow-hidden">
+    <div class="divide-y divide-gray-800">
         @forelse($chats as $chat)
-        <div class="flex flex-col sm:flex-row sm:items-center gap-4 px-6 py-5 hover:bg-gray-50 transition relative">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-4 px-6 py-5 hover:bg-gray-800 transition relative">
             <div class="flex-1 min-w-0 flex items-center gap-4">
-                <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-lg font-bold text-blue-700 shrink-0">
+                <div class="w-12 h-12 rounded-full bg-blue-900/30 flex items-center justify-center text-lg font-bold text-blue-400 shrink-0">
                     {{ strtoupper(substr($chat->visitor->name ?? 'V', 0, 1)) }}
                 </div>
                 <div>
                     <div class="flex items-center gap-2 mb-1">
-                        <p class="text-sm font-semibold text-gray-900 truncate">
+                        <p class="text-sm font-semibold text-gray-100 truncate">
                             {{ $chat->visitor->name ?? 'Visitor' }}
                         </p>
                         <span class="text-xs text-gray-500 font-normal">#{{ $chat->id }}</span>
                     </div>
-                    <p class="text-sm text-gray-600 truncate max-w-xl">{{ $chat->subject ?? 'General inquiry' }}</p>
+                    <p class="text-sm text-gray-400 truncate max-w-xl">{{ $chat->subject ?? 'General inquiry' }}</p>
                     <div class="flex items-center gap-3 mt-1.5">
                          <span class="inline-flex items-center text-xs text-gray-400">
                             <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -59,12 +59,12 @@
         </div>
         @empty
         <div class="px-6 py-20 text-center">
-            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4 animate-pulse">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-800 mb-4 animate-pulse">
                 <svg class="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"></path>
                 </svg>
             </div>
-            <h3 class="text-lg font-medium text-gray-900">Empty Queue</h3>
+            <h3 class="text-lg font-medium text-gray-100">Empty Queue</h3>
             <p class="mt-2 text-sm text-gray-500 max-w-xs mx-auto">Sit tight! New chat requests will appear here as soon as they come in.</p>
         </div>
         @endforelse

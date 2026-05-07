@@ -12,7 +12,9 @@ class MessageResource extends JsonResource
         return [
             'id'          => $this->id,
             'chat_id'     => $this->chat_id,
-            'sender_type' => $this->sender_type,
+            'sender_type' => $this->sender_type instanceof \BackedEnum
+                                 ? $this->sender_type->value
+                                 : (string) $this->sender_type,
             'sender_id'   => $this->sender_id,
             'message'     => $this->message,
             'metadata'    => $this->metadata,

@@ -5,7 +5,7 @@
 
 <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
     <div>
-        <h1 class="text-2xl font-bold text-gray-900">Configuration</h1>
+        <h1 class="text-2xl font-bold text-gray-100">Configuration</h1>
         <p class="text-gray-500 mt-1">Manage global system settings and chat behaviors.</p>
     </div>
 </div>
@@ -15,16 +15,16 @@
     @method('PUT')
 
     @foreach($settings as $group => $items)
-    <div class="bg-white border border-gray-100 rounded-lg shadow-sm overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
-            <h3 class="text-sm font-semibold text-gray-900 uppercase tracking-wider">{{ ucfirst($group) }} Settings</h3>
+    <div class="bg-gray-900 border border-gray-800 rounded-lg shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-800 bg-gray-800">
+            <h3 class="text-sm font-semibold text-gray-100 uppercase tracking-wider">{{ ucfirst($group) }} Settings</h3>
         </div>
 
         <div class="p-6">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                 @foreach($items as $i => $setting)
                 <div>
-                    <label for="setting_{{ $setting->key }}" class="block text-sm font-medium leading-6 text-gray-900 mb-1">
+                    <label for="setting_{{ $setting->key }}" class="block text-sm font-medium leading-6 text-gray-100 mb-1">
                         {{ ucfirst(str_replace('_', ' ', $setting->key)) }}
                         @if(str_contains($setting->key, 'minutes') || str_contains($setting->key, 'timeout'))
                         <span class="text-gray-400 font-normal text-xs ml-1">(in minutes)</span>
@@ -39,7 +39,7 @@
                             name="settings[{{ $loop->parent->index }}_{{ $i }}][value]"
                             id="setting_{{ $setting->key }}"
                             value="{{ $setting->value }}"
-                            class="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400 sm:text-sm sm:leading-6 {{ str_contains($setting->key, 'color') ? 'h-10 cursor-pointer p-0.5' : '' }}">
+                            class="block w-full px-3 py-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100 placeholder:text-gray-400 sm:text-sm sm:leading-6 {{ str_contains($setting->key, 'color') ? 'h-10 cursor-pointer p-0.5' : '' }}">
                     </div>
                     <p class="mt-2 text-xs text-gray-500" id="email-description">Sets the value for {{ str_replace('_', ' ', $setting->key) }}.</p>
                 </div>

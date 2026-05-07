@@ -22,12 +22,25 @@ class DashboardController extends Controller
             'agents_online' => User::where('role', UserRole::AGENT)->where('status', 'online')->count(),
             'total_today'   => Chat::whereDate('created_at', today())->count(),
             'closed_today'  => Chat::where('status', ChatStatus::CLOSED)->whereDate('ended_at', today())->count(),
+            'total_ongoing' => Chat::whereIn('status', ['pending', 'assigned', 'active'])->count(),
         ];
 
         $agents = User::where('role', UserRole::AGENT)
             ->withCount(['assignedChats' => fn($q) => $q->whereIn('status', ['assigned', 'active'])])
             ->get();
 
-        return view('admin.dashboard', compact('stats', 'agents'));
+        // Graph data: Chats created in the last 7 days
+        $graphData = [
+            'labels' => [],
+            'values' => []
+        ];
+        
+        for ($i = 6; $i >= 0; $i--) {
+            $date = today()->subDays($i);
+            $graphData['labels'][] = $date->format('M d');
+            $graphData['values'][] = Chat::whereDate('created_at', $date)->count();
+        }
+
+        return view('admin.dashboard', compact('stats', 'agents', 'graphData'));
     }
 }

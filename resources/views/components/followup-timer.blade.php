@@ -1,18 +1,18 @@
-<div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4" x-data="followupTimer('{{ $scheduledAt }}')">
-    <div class="flex items-center justify-between mb-2">
-        <h4 class="text-sm font-semibold text-gray-900 flex items-center">
-            <svg class="w-4 h-4 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<div class="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-5 mb-5 shadow-xl" x-data="followupTimer('{{ $scheduledAt }}')">
+    <div class="flex items-center justify-between mb-3">
+        <h4 class="text-xs font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2">
+            <svg class="w-4 h-4 text-[#F0644B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
             Scheduled Follow-up
         </h4>
-        <span class="text-xs font-medium px-2 py-1 rounded-full"
-            :class="isOverdue ? 'bg-red-100 text-red-800' : 'bg-indigo-100 text-indigo-800'"
+        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-widest"
+            :class="isOverdue ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 'bg-[#F0644B]/10 text-[#F0644B] border-[#F0644B]/20'"
             x-text="isOverdue ? 'Overdue' : 'Pending'">
         </span>
     </div>
 
-    <p class="text-sm text-gray-600 mb-3" x-text="timeRemaining"></p>
+    <p class="text-sm font-medium text-slate-100 mb-4" x-text="timeRemaining"></p>
 
     <div class="flex gap-2">
         <form method="POST" action="{{ route('agent.followups.complete', $followupId) }}" class="flex-1">
@@ -25,7 +25,7 @@
         <form method="POST" action="{{ route('agent.followups.cancel', $followupId) }}" class="flex-1">
             @csrf
             @method('PATCH')
-            <button type="submit" class="w-full justify-center inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded shadow-sm text-gray-700 bg-white hover:bg-gray-50">
+            <button type="submit" class="w-full justify-center inline-flex items-center px-3 py-1.5 border border-gray-600 text-xs font-medium rounded shadow-sm text-gray-300 bg-gray-900 hover:bg-gray-800">
                 Cancel
             </button>
         </form>

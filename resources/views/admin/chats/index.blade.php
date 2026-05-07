@@ -5,78 +5,81 @@
 
 <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
     <div>
-        <h1 class="text-2xl font-bold text-gray-900">System Activity</h1>
+        <h1 class="text-2xl font-bold text-gray-100">System Activity</h1>
         <p class="text-gray-500 mt-1">Monitor all active and historical chat conversations.</p>
     </div>
 </div>
 
-{{-- Status Filters --}}
-<div class="flex flex-wrap items-center gap-2 mb-6 bg-white p-2 rounded-lg border border-gray-100 shadow-sm inline-flex">
-    @php
-    $currentStatus = request('status', 'pending');
-    $filters = ['pending', 'assigned', 'active', 'closed', 'transferred'];
-    @endphp
-
-    @foreach($filters as $filter)
-    @php
-    $isActive = $currentStatus === $filter;
-    $activeClass = 'bg-blue-50 text-blue-700 font-medium border-blue-200';
-    $inactiveClass = 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 border-transparent';
-    @endphp
-    <a href="{{ route('admin.chats.index', ['status' => $filter]) }}"
-        class="px-4 py-2 rounded-md text-sm transition border {{ $isActive ? $activeClass : $inactiveClass }}">
-        {{ ucfirst(str_replace('_', ' ', $filter)) }}
-    </a>
-    @endforeach
+<div class="bg-gray-900 p-4 rounded-lg shadow-sm border border-gray-800 mb-6 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+        <label for="status-filter" class="text-sm font-medium text-gray-300">Filter by status:</label>
+        @php 
+        $currentStatus = request('status', 'all'); 
+        $filters = ['all', 'pending', 'assigned', 'active', 'closed', 'transferred'];
+        @endphp
+        <select id="status-filter" 
+            onchange="window.location.href = this.value"
+            class="block w-48 rounded-md border-gray-600 py-2 pl-3 pr-10 text-base focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm shadow-sm">
+            @foreach($filters as $filter)
+                <option value="{{ route('admin.chats.index', ['status' => $filter]) }}" {{ $currentStatus === $filter ? 'selected' : '' }}>
+                    {{ ucfirst(str_replace('_', ' ', $filter)) }}
+                </option>
+            @endforeach
+        </select>
+    </div>
 </div>
 
-<div class="bg-white border border-gray-100 rounded-lg shadow-sm overflow-hidden">
-    <div class="divide-y divide-gray-100">
+<div class="bg-gray-900 border border-gray-800 rounded-lg shadow-sm overflow-hidden">
+    <div class="divide-y divide-gray-800">
         @forelse($chats as $chat)
-        <div class="flex flex-col sm:flex-row sm:items-center gap-4 px-6 py-4 hover:bg-gray-50 transition">
-
+        <div class="group flex flex-col sm:flex-row sm:items-center gap-4 px-6 py-4 hover:bg-gray-800 transition relative chat-row cursor-pointer" data-chat-id="{{ $chat->id }}" onclick="window.location.href='{{ route('agent.chats.show', $chat->id) }}'">
+            
             {{-- Avatar & Info --}}
-            <div class="flex items-center gap-4 flex-1 min-w-0">
-                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-sm font-bold text-blue-700 shrink-0">
-                    {{ strtoupper(substr($chat->visitor->name ?? 'V', 0, 1)) }}
+            <div class="flex items-center gap-4 flex-1 min-w-0 pointer-events-none z-10 relative">
+                <div class="relative">
+                    <div class="w-12 h-12 rounded-full bg-[#F0644B] flex items-center justify-center text-lg font-bold text-white shadow-sm shrink-0">
+                        {{ strtoupper(substr($chat->visitor->name ?? 'V', 0, 1)) }}
+                    </div>
+                    <!-- Unread Indicator Dot -->
+                    <span class="unread-dot-{{ $chat->id }} hidden absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 rounded-full animate-pulse border-2 border-white shadow-sm"></span>
                 </div>
                 <div class="min-w-0">
-                    <p class="text-sm font-semibold text-gray-900 truncate flex items-center gap-2">
+                    <p class="text-sm font-semibold text-gray-100 truncate flex items-center gap-2">
                         {{ $chat->visitor->name ?? 'Visitor' }}
                         <span class="text-xs font-normal text-gray-500">ID: #{{ $chat->id }}</span>
                     </p>
-                    <div class="flex items-center gap-1.5 text-xs text-gray-600 mt-0.5 truncate">
+                    <div class="flex items-center gap-1.5 text-xs text-gray-400 mt-0.5 truncate">
                         <span class="font-medium truncate max-w-[150px]">{{ $chat->subject ?? 'General Inquiry' }}</span>
                         <span class="text-gray-300">&bull;</span>
                         <span class="flex items-center gap-1">
                             <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                             </svg>
-                            Agent: <span class="{{ $chat->agent ? 'text-gray-800' : 'text-yellow-600 italic' }}">{{ $chat->agent->name ?? 'Unassigned' }}</span>
+                            Agent: <span class="{{ $chat->agent ? 'text-gray-200' : 'text-yellow-600 italic' }}">{{ $chat->agent->name ?? 'Unassigned' }}</span>
                         </span>
                     </div>
                 </div>
             </div>
 
             {{-- Status & Time --}}
-            <div class="flex items-center gap-4 shrink-0 sm:ml-4">
+            <div class="flex items-center gap-4 shrink-0 sm:ml-4 z-20 relative w-full sm:w-auto mt-3 sm:mt-0 justify-between sm:justify-end">
                 @php
                 $colors = [
-                'pending' => 'bg-yellow-100 text-yellow-800',
-                'assigned' => 'bg-green-100 text-green-800',
-                'active' => 'bg-blue-100 text-blue-800',
-                'transferred' => 'bg-purple-100 text-purple-800',
-                'closed' => 'bg-gray-100 text-gray-800',
+                'pending' => 'bg-yellow-900/30 text-yellow-300',
+                'assigned' => 'bg-emerald-100 text-emerald-800',
+                'active' => 'bg-blue-900/30 text-blue-300',
+                'transferred' => 'bg-purple-900/30 text-purple-300',
+                'closed' => 'bg-gray-800 text-gray-200',
                 ];
                 $statusVal = $chat->status->value;
-                $statusClass = $colors[$statusVal] ?? 'bg-gray-100 text-gray-800';
+                $statusClass = $colors[$statusVal] ?? 'bg-gray-800 text-gray-200';
                 @endphp
 
-                <div class="flex flex-col items-end gap-1">
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $statusClass }}">
+                <div class="flex flex-col items-start sm:items-end gap-1">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] tracking-wider uppercase font-bold {{ $statusClass }}">
                         {{ ucfirst(str_replace('_', ' ', $statusVal)) }}
                     </span>
-                    <span class="text-xs text-gray-400 flex items-center gap-1">
+                    <span class="text-xs text-gray-400 font-medium flex items-center gap-1">
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
@@ -84,11 +87,9 @@
                     </span>
                 </div>
 
-                <a href="{{ route('agent.chats.show', $chat->id) }}" class="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition" title="View Chat">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                    </svg>
-                </a>
+                <div class="hidden group-hover:flex items-center justify-center w-8 h-8 rounded-full bg-gray-800 text-gray-500 transition-colors ml-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </div>
             </div>
         </div>
         @empty

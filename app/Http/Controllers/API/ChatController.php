@@ -70,7 +70,14 @@ class ChatController extends Controller
     public function details(Request $request): JsonResponse
     {
         $id = $request->input('chat_id');
+        $token = $request->header('X-Session-Token') ?? $request->input('session_token');
+        
         $chat = $this->chatService->getChat($id);
+        
+        if (!$chat || !$chat->visitor || $chat->visitor->session_token !== $token) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
         $chat->load(['visitor', 'agent']);
 
         return response()->json([
@@ -85,6 +92,13 @@ class ChatController extends Controller
     public function send(SendMessageRequest $request): JsonResponse
     {
         $id = $request->validated('chat_id');
+        $token = $request->header('X-Session-Token') ?? $request->input('session_token');
+        
+        $chat = $this->chatService->getChat($id);
+        if (!$chat || !$chat->visitor || $chat->visitor->session_token !== $token) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
         $dto = new SendMessageDTO(
             chatId: $id,
             senderType: MessageSenderType::VISITOR->value,
@@ -107,6 +121,13 @@ class ChatController extends Controller
     public function messages(Request $request): JsonResponse
     {
         $id = $request->query('chat_id');
+        $token = $request->header('X-Session-Token') ?? $request->input('session_token');
+
+        $chat = $this->chatService->getChat($id);
+        if (!$chat || !$chat->visitor || $chat->visitor->session_token !== $token) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
         $messages = $this->messages->getByChatId($id);
 
         return response()->json([
@@ -124,19 +145,27 @@ class ChatController extends Controller
      */
     public function typing(Request $request): JsonResponse
     {
-        $id = $request->input('chat_id');
         $request->validate([
-            'chat_id'      => 'required',
+            'chat_id'      => 'required|integer',
             'is_typing'    => 'required|boolean',
             'visitor_name' => 'nullable|string|max:255',
         ]);
 
+        $id    = $request->validated('chat_id');
+        $token = $request->header('X-Session-Token') ?? $request->input('session_token');
+
+        // Validate the visitor owns this chat
+        $chat = $this->chatService->getChat($id);
+        if (!$chat || !$chat->visitor || $chat->visitor->session_token !== $token) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
         event(new TypingIndicator(
-            chatId: $id,
-            userId: 0,
-            userName: $request->input('visitor_name', 'Visitor'),
+            chatId:     $id,
+            userId:     0,
+            userName:   $request->input('visitor_name', 'Visitor'),
             senderType: 'visitor',
-            isTyping: $request->boolean('is_typing'),
+            isTyping:   $request->boolean('is_typing'),
         ));
 
         return response()->json(['message' => 'OK']);

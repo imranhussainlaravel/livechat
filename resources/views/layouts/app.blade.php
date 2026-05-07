@@ -4,14 +4,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ config('app.name', 'LiveChat') }}</title>
+    <title>Nexon Live Chat</title>
+    <link rel="icon" type="image/webp" href="https://images.nexonpackaging.com/logo.webp">
     <link rel="stylesheet" href="/css/app.css">
     <script src="/js/app.js"></script>
     <!-- Tailwind CSS (temporary CDN for prototyping if Vite isn't setup fully for UI yet, otherwise use Vite) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/alpinejs" defer></script>
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
     <style>
+        :root {
+            --brand-primary: #F0644B;
+            --brand-primary-soft: rgba(240, 100, 75, 0.1);
+        }
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Custom scrollbar for dark theme */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
         /* Global Toast styles */
         #toast-container {
             position: fixed;
@@ -46,7 +63,12 @@
     </style>
 </head>
 
-<body class="bg-gray-50 text-gray-900 font-sans antialiased h-screen flex overflow-hidden">
+<body class="bg-slate-950 text-slate-100 font-sans antialiased h-screen flex overflow-hidden relative">
+    <!-- Background Decor (Matches Login Page) -->
+    <div class="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+        <div class="absolute top-[-10%] right-[-10%] w-[60%] h-[60%] bg-[#F0644B]/10 blur-[150px] rounded-full"></div>
+        <div class="absolute bottom-[-10%] left-[-10%] w-[60%] h-[60%] bg-indigo-500/5 blur-[150px] rounded-full"></div>
+    </div>
 
     <!-- Sidebar Component -->
     <x-sidebar />
@@ -169,6 +191,103 @@
                 console.error('AJAX Error:', err);
             });
         });
+        // ---- UNREAD NOTIFICATIONS LOGIC ----
+        window.unreadChats = JSON.parse(localStorage.getItem('unreadChats') || '[]');
+        
+        function updateUnreadUI() {
+            // Update sidebar badge
+            const badge = document.getElementById('unread-chat-counter');
+            if (badge) {
+                if (window.unreadChats.length > 0) {
+                    badge.textContent = window.unreadChats.length;
+                    badge.classList.remove('hidden');
+                } else {
+                    badge.classList.add('hidden');
+                }
+            }
+
+            // Update red dots on the chat list page if present
+            document.querySelectorAll('[class^="unread-dot-"]').forEach(el => el.classList.add('hidden'));
+            window.unreadChats.forEach(chatId => {
+                const dot = document.querySelector('.unread-dot-' + chatId);
+                if (dot) dot.classList.remove('hidden');
+            });
+        }
+        
+        // Call immediately to render any initial unread state
+        updateUnreadUI();
+
+        // Push Notification Permission
+        if ("Notification" in window) {
+            if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+                Notification.requestPermission();
+            }
+        }
+
+        // Initialize Pusher Globally if Authenticated
+        @if(auth()->check() && (auth()->user()->isAgent() || auth()->user()->isAdmin()))
+            const loadScript = (src) => new Promise(resolve => {
+                if(document.querySelector(`script[src="${src}"]`)) return resolve();
+                const s = document.createElement('script'); s.src = src; s.onload = resolve; document.head.appendChild(s);
+            });
+
+            Promise.all([
+                loadScript('https://unpkg.com/pusher-js@8.3.0/dist/web/pusher.min.js'),
+                loadScript('https://unpkg.com/laravel-echo@1.15.3/dist/echo.iife.js')
+            ]).then(() => {
+                if (!window.Echo) {
+                    window.Echo = new window.Echo({
+                        broadcaster: 'pusher',
+                        key: '54ff5280f5ead0e4ec9f', // From config
+                        cluster: 'mt1',
+                        forceTLS: true,
+                        authEndpoint: '/broadcasting/auth',
+                        auth: {
+                            headers: { 'X-CSRF-TOKEN': document.querySelector('input[name="_token"]')?.value || '{{ csrf_token() }}' }
+                        }
+                    });
+                }
+
+                const currentUserId = {{ auth()->id() }};
+                const isAdmin = {{ auth()->user()->isAdmin() ? 'true' : 'false' }};
+                const channelName = isAdmin ? 'admin' : 'agent.' + currentUserId;
+                
+                // Listen globally
+                console.log('Registering global Echo listener on channel:', channelName);
+                window.Echo.private(channelName)
+                    .listen('.message.new', function(e) {
+                        console.log('GLOBAL LISTENER RECEIVED message.new EVENT:', e);
+                        // If it's a message from the visitor, and we are not currently on that chat's page
+                        if (e.sender_type === 'visitor') {
+                            const isCurrentChatPage = window.location.pathname.includes('/chats/' + e.chat_id);
+                            console.log('Is current chat page?', isCurrentChatPage);
+                            
+                            if (!isCurrentChatPage) {
+                                // Add to unread tracking
+                                if (!window.unreadChats.includes(e.chat_id)) {
+                                    console.log('Adding to unread tracking:', e.chat_id);
+                                    window.unreadChats.push(e.chat_id);
+                                    localStorage.setItem('unreadChats', JSON.stringify(window.unreadChats));
+                                    updateUnreadUI();
+                                }
+
+                                // Show Browser Notification
+                                if ("Notification" in window && Notification.permission === "granted") {
+                                    new Notification("New Message from Visitor", {
+                                        body: e.message,
+                                        icon: "/favicon.ico"
+                                    }).onclick = function() {
+                                        window.location.href = '/agent/chats/' + e.chat_id;
+                                    };
+                                }
+                            }
+                        }
+                    })
+                    .error((err) => {
+                        console.error("Echo channel error:", err);
+                    });
+            });
+        @endif
     </script>
     @stack('scripts')
 </body>

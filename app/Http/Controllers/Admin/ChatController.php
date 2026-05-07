@@ -13,8 +13,8 @@ class ChatController extends Controller
     public function index(Request $request)
     {
         $chats = $this->chats->getByStatus(
-            $request->get('status', 'pending'),
-            $request->get('per_page', 15),
+            $request->get('status', 'all'),
+            $request->get('per_page', 15)
         );
 
         return view('admin.chats.index', compact('chats'));

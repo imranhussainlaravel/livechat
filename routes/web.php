@@ -66,6 +66,8 @@ Route::prefix('agent')
             ->name('chats.updateStatus');
         Route::post('/chats/{id}/visitor-note', [\App\Http\Controllers\Agent\ChatController::class, 'addVisitorNote'])
             ->name('chats.addVisitorNote');
+        Route::patch('/visitor/{id}', [\App\Http\Controllers\Agent\ChatController::class, 'updateVisitor'])
+            ->name('visitor.update');
 
         // WebSocket triggers (AJAX only)
         Route::post('/chats/{id}/typing', [\App\Http\Controllers\Agent\ChatController::class, 'typing'])
@@ -161,3 +163,7 @@ Route::prefix('admin')
         Route::get('/tickets', [\App\Http\Controllers\Admin\TicketController::class, 'index'])
             ->name('tickets.index');
     });
+
+// Standard broadcast auth for agents (uses session)
+Broadcast::routes();
+require __DIR__.'/channels.php';

@@ -7,26 +7,24 @@
     main { overflow: hidden !important; padding: 0 !important; }
 </style>
 
-<div class="flex h-[calc(100vh-3rem)] overflow-hidden bg-gray-50">
-    <div class="flex-1 flex flex-col min-w-0 border-r border-gray-100">
+<div class="flex h-[calc(100vh-3rem)] overflow-hidden bg-gray-800">
+    <div class="flex-1 flex flex-col min-w-0 border-r border-gray-800">
 
         {{-- Chat Header --}}
-        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+        <div class="px-6 py-4 border-b border-gray-800 flex items-center justify-between bg-gray-800">
             <div class="flex items-center gap-4">
-                <a href="{{ route('agent.chats.index') }}" class="p-2 -ml-2 text-gray-400 hover:text-gray-600 transition-colors" title="Back to Chats">
+                <a href="{{ route('agent.chats.index') }}" class="p-2 -ml-2 text-gray-400 hover:text-gray-400 transition-colors" title="Back to Chats">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                     </svg>
                 </a>
-                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-lg font-bold text-blue-700 shrink-0">
+                <div id="visitor-header-initial" class="w-10 h-10 rounded-full bg-[#F0644B]/30 flex items-center justify-center text-lg font-bold text-[#F0644B] shrink-0">
                     {{ strtoupper(substr($chat->visitor->name ?? 'V', 0, 1)) }}
                 </div>
                 <div>
-                    <h2 class="text-base font-semibold text-gray-900">{{ $chat->visitor->name ?? 'Visitor' }}</h2>
+                    <h2 id="visitor-header-name" class="text-base font-semibold text-gray-100">{{ $chat->visitor->name ?? 'Visitor' }}</h2>
                     <p class="text-sm text-gray-500">
-                        @if($chat->visitor->email)
-                        {{ $chat->visitor->email }} <span class="mx-1">&middot;</span>
-                        @endif
+                        <span id="visitor-header-email">@if($chat->visitor->email){{ $chat->visitor->email }}<span class="mx-1">&middot;</span>@endif</span>
                         {{ $chat->subject ?? 'General Inquiry' }}
                     </p>
                 </div>
@@ -35,13 +33,13 @@
             <div class="flex items-center gap-3">
                 @php
                 $statusColors = [
-                'pending' => 'bg-yellow-100 text-yellow-800',
-                'assigned' => 'bg-green-100 text-green-800',
-                'active' => 'bg-blue-100 text-blue-800',
-                'transferred' => 'bg-purple-100 text-purple-800',
-                'closed' => 'bg-gray-100 text-gray-800',
+                'pending' => 'bg-yellow-900/30 text-yellow-300',
+                'assigned' => 'bg-green-900/30 text-green-300',
+                'active' => 'bg-blue-900/30 text-blue-300',
+                'transferred' => 'bg-purple-900/30 text-purple-300',
+                'closed' => 'bg-gray-800 text-gray-200',
                 ];
-                $statusBg = $statusColors[$chat->status->value] ?? 'bg-gray-100 text-gray-800';
+                $statusBg = $statusColors[$chat->status->value] ?? 'bg-gray-800 text-gray-200';
                 @endphp
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $statusBg }}">
                     {{ ucfirst(str_replace('_', ' ', $chat->status->value)) }}
@@ -51,7 +49,7 @@
                 @if(! in_array($chat->status->value, ['closed']))
                 <form method="POST" action="{{ route('agent.chats.close', $chat->id) }}" class="inline" data-ajax-form>
                     @csrf
-                    <button type="submit" class="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-md text-red-600 bg-white hover:bg-red-50 hover:border-red-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors">
+                    <button type="submit" class="inline-flex items-center px-3 py-1.5 border border-gray-600 text-xs font-medium rounded-md text-red-600 bg-gray-900 hover:bg-red-50 hover:border-red-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors">
                         Close Chat
                     </button>
                 </form>
@@ -61,7 +59,7 @@
 
         {{-- Messages Area --}}
         <div class="flex-1 relative overflow-hidden" style="position:relative;">
-            <div id="messages-container" class="absolute inset-0 overflow-y-auto p-4 space-y-3 bg-white" style="z-index:1;">
+            <div id="messages-container" class="absolute inset-0 overflow-y-auto p-4 space-y-3 bg-gray-900" style="z-index:1;">
                 @forelse($messages as $msg)
                 @php
                 $senderType = $msg->sender_type->value ?? $msg->sender_type;
@@ -72,11 +70,11 @@
                 @if($isSystem)
                 <div class="flex items-center justify-center my-1.5">
                     <div class="flex items-center gap-4 w-full">
-                        <div class="flex-1 h-px bg-gray-100"></div>
-                        <span class="px-3 py-1 bg-gray-50 rounded-full text-[11px] font-medium text-gray-400 uppercase tracking-wider whitespace-nowrap">
+                        <div class="flex-1 h-px bg-gray-800"></div>
+                        <span class="px-3 py-1 bg-gray-800 rounded-full text-[11px] font-medium text-gray-400 uppercase tracking-wider whitespace-nowrap">
                             {{ $msg->message }}
                         </span>
-                        <div class="flex-1 h-px bg-gray-100"></div>
+                        <div class="flex-1 h-px bg-gray-800"></div>
                     </div>
                 </div>
                 @else
@@ -108,7 +106,7 @@
         </div>
 
         {{-- Typing Indicator --}}
-        <div id="typing-indicator" class="px-6 py-2 text-xs text-gray-400 bg-gray-50 border-t border-gray-100 hidden">
+        <div id="typing-indicator" class="px-6 py-2 text-xs text-gray-400 bg-gray-800 border-t border-gray-800 hidden">
             <span class="flex items-center gap-1.5 animate-pulse">
                 <span class="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
                 <span class="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
@@ -120,12 +118,12 @@
         {{-- Message Input --}}
         @if(! in_array($chat->status->value, ['closed']))
         <form method="POST" action="{{ route('agent.chats.message', $chat->id) }}" id="message-form" 
-              class="bg-white border-t border-gray-100 p-4 sticky bottom-0 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+              class="bg-gray-900 border-t border-gray-800 p-4 sticky bottom-0 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
             @csrf
-            <div class="flex items-end gap-3 rounded-lg border border-gray-300 bg-white px-3 py-2 shadow-sm focus-within:ring-1 focus-within:ring-blue-500 focus-within:border-blue-500">
+            <div class="flex items-end gap-3 rounded-lg border border-gray-600 bg-gray-900 px-3 py-2 shadow-sm focus-within:ring-1 focus-within:ring-blue-500 focus-within:border-blue-500">
                 <textarea name="message" id="message-input" required autocomplete="off" rows="1"
                     placeholder="Type your message here..."
-                    class="block w-full resize-none border-0 bg-transparent py-1.5 text-gray-900 placeholder:text-gray-400 focus:ring-0 sm:text-sm sm:leading-6"></textarea>
+                    class="block w-full resize-none border-0 bg-transparent py-1.5 text-gray-100 placeholder:text-gray-400 focus:ring-0 sm:text-sm sm:leading-6"></textarea>
 
                 <div class="flex shrink-0">
                     <button type="submit" class="inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">
@@ -138,15 +136,15 @@
             </div>
         </form>
         @else
-        <div class="bg-gray-50 border-t border-gray-100 p-4 text-center">
+        <div class="bg-gray-800 border-t border-gray-800 p-4 text-center">
             <p class="text-sm text-gray-500">This conversation is {{ $chat->status->value }}. You cannot send new messages.</p>
         </div>
         @endif
     </div>
 
     {{-- Sidebar: Visitor Info & Actions --}}
-    <div class="w-80 h-full overflow-y-auto bg-white border-l border-gray-100 shadow-sm">
-        <x-chat-sidebar :chat="$chat" :agents="$agents" />
+    <div class="w-80 h-full overflow-y-auto bg-gray-900 border-l border-gray-800 shadow-sm">
+        <x-chat-sidebar :chat="$chat" :agents="$agents" :previousAgentId="$previousAgentId ?? null" :timeline="$timeline ?? []" />
     </div>
 </div>
 
@@ -159,6 +157,16 @@
         var textarea = document.getElementById('message-input');
         var tokenEl = form ? form.querySelector('input[name="_token"]') : null;
         var csrfToken = tokenEl ? tokenEl.value : '';
+
+        // ---- CLEAR UNREAD STATUS ----
+        var chatId = {{ $chat->id }};
+        var storedUnreads = JSON.parse(localStorage.getItem('unreadChats') || '[]');
+        var index = storedUnreads.indexOf(chatId);
+        if (index !== -1) {
+            storedUnreads.splice(index, 1);
+            localStorage.setItem('unreadChats', JSON.stringify(storedUnreads));
+            if (typeof updateUnreadUI === 'function') updateUnreadUI();
+        }
 
         // ---- SCROLL TO BOTTOM ----
         function scrollToBottom(smooth) {
@@ -199,7 +207,7 @@
             var html = '<div class="flex items-start mb-3 flex-row-reverse">' +
                 '<div class="flex flex-col items-end max-w-[85%]">' +
                 '<span class="text-[10px] text-gray-400 mb-0.5 px-1">' + time + '</span>' +
-                '<div class="px-3 py-1.5 rounded-2xl shadow-sm text-[13px] leading-relaxed bg-indigo-600 text-white rounded-tr-sm">' +
+                '<div class="px-3 py-1.5 rounded-2xl shadow-sm text-[13px] leading-relaxed bg-[#F0644B] text-white rounded-tr-sm">' +
                 escaped + '</div></div></div>';
             container.insertAdjacentHTML('beforeend', html);
             scrollToBottom(true);
@@ -213,7 +221,7 @@
             var html = '<div class="flex items-start mb-3">' +
                 '<div class="flex flex-col items-start max-w-[85%]">' +
                 '<span class="text-[10px] text-gray-400 mb-0.5 px-1">' + time + '</span>' +
-                '<div class="px-3 py-1.5 rounded-2xl shadow-sm text-[13px] leading-relaxed bg-white text-gray-800 border border-gray-100 rounded-tl-sm">' +
+                '<div class="px-3 py-1.5 rounded-2xl shadow-sm text-[13px] leading-relaxed bg-gray-900 text-gray-200 border border-gray-800 rounded-tl-sm">' +
                 escaped + '</div></div></div>';
             container.insertAdjacentHTML('beforeend', html);
             scrollToBottom(true);
@@ -307,6 +315,7 @@
             loadScript('https://unpkg.com/pusher-js@8.3.0/dist/web/pusher.min.js'),
             loadScript('https://unpkg.com/laravel-echo@1.15.3/dist/echo.iife.js')
         ]).then(() => {
+            Pusher.logToConsole = true;
             if (oldEcho && typeof oldEcho.disconnect === 'function') {
                 oldEcho.disconnect();
             }
@@ -332,6 +341,10 @@
                     console.log("AGENT RECEIVED WS MESSAGE:", e);
                     if (e.sender_type === 'visitor') {
                         appendVisitorMessage(e.message, e.created_at);
+                    } else if (e.sender_type === 'system') {
+                        appendSystemMessage(e.message);
+                    } else if (e.sender_type === 'agent' && e.sender_id !== currentUserId) {
+                        appendAgentMessage(e.message);
                     }
                 });
 
@@ -377,10 +390,10 @@
             function appendSystemMessage(msg) {
                 var sysHtml = '<div class="flex items-center justify-center my-1.5">' +
                     '<div class="flex items-center gap-4 w-full">' +
-                    '<div class="flex-1 h-px bg-gray-100"></div>' +
-                    '<span class="px-3 py-1 bg-gray-50 rounded-full text-[11px] font-medium text-gray-400 uppercase tracking-wider whitespace-nowrap">' +
+                    '<div class="flex-1 h-px bg-gray-800"></div>' +
+                    '<span class="px-3 py-1 bg-gray-800 rounded-full text-[11px] font-medium text-gray-400 uppercase tracking-wider whitespace-nowrap">' +
                     msg + '</span>' +
-                    '<div class="flex-1 h-px bg-gray-100"></div>' +
+                    '<div class="flex-1 h-px bg-gray-800"></div>' +
                     '</div></div>';
                 container.insertAdjacentHTML('beforeend', sysHtml);
                 scrollToBottom(true);

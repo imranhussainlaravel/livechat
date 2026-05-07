@@ -33,28 +33,41 @@ Route::prefix('chat')->middleware('throttle:chat')->group(function () {
  * Unauthenticated visitors → verify via X-Session-Token, then Pusher auth
  */
 Route::post('/broadcasting/auth', function (\Illuminate\Http\Request $request) {
-    // Visitor auth via session token (uses header)
-    $sessionToken = $request->header('X-Session-Token');
+    $sessionToken = $request->header('X-Session-Token') ?? $request->input('session_token');
     $channelName  = $request->input('channel_name');
     $socketId     = $request->input('socket_id');
 
     if (!$sessionToken || !$channelName || !$socketId) {
-        return response()->json(['message' => 'Unauthorized'], 403);
+        return response()->json(['message' => 'Unauthorized - missing fields'], 403);
     }
 
-    // Extract chat ID from "private-chat.123"
-    if (!preg_match('/^private-chat\.(\d+)$/', $channelName, $matches)) {
-        return response()->json(['message' => 'Invalid channel'], 403);
+    // Extract chat ID from "private-chat.123" or just "chat.123"
+    if (!preg_match('/^(private-)?chat\.(\d+)$/', $channelName, $matches)) {
+        return response()->json(['message' => 'Invalid channel format'], 403);
     }
 
-    $chatId = (int) $matches[1];
+    $chatId = (int) ($matches[2] ?? $matches[1]);
     $chat   = \App\Models\Chat::with('visitor')->find($chatId);
 
-    if (!$chat || !$chat->visitor || $chat->visitor->session_token !== $sessionToken) {
-        return response()->json(['message' => 'Unauthorized'], 403);
+    if (!$chat) {
+        return response()->json(['message' => 'Chat not found'], 403);
     }
 
-    // Generate Pusher auth signature for visitors
+    if (!$chat->visitor || $chat->visitor->session_token !== $sessionToken) {
+        \Log::warning('BROADCAST AUTH FAILED', [
+            'chatId' => $chatId,
+            'dbToken' => $chat->visitor->session_token ?? 'NULL',
+            'sentToken' => $sessionToken
+        ]);
+        return response()->json([
+            'message' => 'Unauthorized - token mismatch',
+            'debug' => [
+                'received_token' => substr($sessionToken, 0, 5) . '...',
+                'chat_id' => $chatId
+            ]
+        ], 403);
+    }
+
     $pusher = new \Pusher\Pusher(
         config('broadcasting.connections.pusher.key'),
         config('broadcasting.connections.pusher.secret'),
@@ -65,9 +78,12 @@ Route::post('/broadcasting/auth', function (\Illuminate\Http\Request $request) {
         ]
     );
 
-    return response($pusher->authorizeChannel($channelName, $socketId), 200, [
-        'Content-Type' => 'application/json',
-    ]);
+    \Log::info('BROADCAST AUTH SUCCESS', ['chatId' => $chatId]);
+    
+    // authorizeChannel returns a JSON string, decode it so response()->json() doesn't double-encode
+    $authPayload = json_decode($pusher->authorizeChannel($channelName, $socketId), true);
+    
+    return response()->json($authPayload);
 });
 
 

@@ -137,14 +137,15 @@ class ChatService
 
     /**
      * Send a message within an existing chat.
-     * Automatically transitions open → in_progress on first agent reply.
+     * Automatically transitions assigned → active on first agent reply.
+     * Events are fired AFTER the transaction commits to prevent race conditions
+     * where Pusher delivers the event before the row is visible to other queries.
      */
     public function sendMessage(SendMessageDTO $dto)
     {
-        return DB::transaction(function () use ($dto) {
+        $message = DB::transaction(function () use ($dto) {
             $chat = $this->chats->findById($dto->chatId);
 
-            // Auto-transition: assigned → active on first agent message
             if (
                 $dto->senderType === MessageSenderType::AGENT->value
                 && $chat->status === ChatStatus::ASSIGNED
@@ -152,19 +153,21 @@ class ChatService
                 $this->transitionStatus($chat, ChatStatus::ACTIVE, $dto->senderId);
             }
 
-            $message = $this->messages->create([
+            return $this->messages->create([
                 'chat_id'     => $dto->chatId,
                 'sender_type' => $dto->senderType,
                 'sender_id'   => $dto->senderId,
                 'message'     => $dto->message,
                 'metadata'    => $dto->metadata,
             ]);
-
-            event(new MessageSent($message->load('chat')));
-            event(new \App\Events\NewMessage($message));
-
-            return $message;
         });
+
+        // Broadcast after commit so clients can safely re-fetch the message from DB
+        $message->load('chat');
+        event(new MessageSent($message));
+        event(new \App\Events\NewMessage($message));
+
+        return $message;
     }
 
     /* ================================================================== */
@@ -310,16 +313,21 @@ class ChatService
     /* ================================================================== */
 
     /**
-     * Insert a system-generated message into the chat timeline.
+     * Insert a system-generated message and broadcast it immediately via Pusher.
+     * ShouldBroadcastNow fires synchronously, so by the time Pusher delivers the
+     * event to subscribers the surrounding transaction is always already committed.
      */
     private function systemMessage(int $chatId, string $text): void
     {
-        $this->messages->create([
+        $message = $this->messages->create([
             'chat_id'     => $chatId,
             'sender_type' => MessageSenderType::SYSTEM->value,
             'sender_id'   => null,
             'message'     => $text,
         ]);
+
+        $message->load('chat');
+        event(new \App\Events\NewMessage($message));
     }
 
     /**

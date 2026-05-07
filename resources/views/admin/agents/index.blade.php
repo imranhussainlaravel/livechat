@@ -5,14 +5,14 @@
 
 <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
     <div>
-        <h1 class="text-2xl font-bold text-gray-900">Agent Details</h1>
+        <h1 class="text-2xl font-bold text-gray-100">Agent Details</h1>
         <p class="text-gray-500 mt-1">Add, remove, and monitor support agents.</p>
     </div>
 </div>
 
 {{-- Create Agent Form --}}
-<div class="bg-white border border-gray-100 rounded-lg shadow-sm p-6 mb-8">
-    <h3 class="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
+<div class="bg-gray-900 border border-gray-800 rounded-lg shadow-sm p-6 mb-8">
+    <h3 class="text-base font-semibold text-gray-100 mb-4 flex items-center gap-2">
         <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
         </svg>
@@ -21,19 +21,19 @@
     <form method="POST" action="{{ route('admin.agents.store') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
         @csrf
         <div>
-            <label for="name" class="block text-sm font-medium leading-6 text-gray-900 mb-1">Full Name</label>
+            <label for="name" class="block text-sm font-medium leading-6 text-gray-100 mb-1">Full Name</label>
             <input type="text" name="name" id="name" placeholder="e.g. Jane Doe" required
-                class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6">
+                class="block w-full rounded-md border-0 py-1.5 text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6">
         </div>
         <div>
-            <label for="email" class="block text-sm font-medium leading-6 text-gray-900 mb-1">Email Address</label>
+            <label for="email" class="block text-sm font-medium leading-6 text-gray-100 mb-1">Email Address</label>
             <input type="email" name="email" id="email" placeholder="jane@company.com" required
-                class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6">
+                class="block w-full rounded-md border-0 py-1.5 text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6">
         </div>
         <div>
-            <label for="password" class="block text-sm font-medium leading-6 text-gray-900 mb-1">Password</label>
+            <label for="password" class="block text-sm font-medium leading-6 text-gray-100 mb-1">Password</label>
             <input type="password" name="password" id="password" placeholder="Min 8 characters" required minlength="8"
-                class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6">
+                class="block w-full rounded-md border-0 py-1.5 text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6">
         </div>
         <div>
             <button type="submit" class="w-full flex justify-center items-center gap-2 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
@@ -47,22 +47,22 @@
 </div>
 
 {{-- Agents List --}}
-<div class="bg-white border border-gray-100 rounded-lg shadow-sm overflow-hidden">
-    <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
-        <h3 class="text-sm font-semibold text-gray-900">Active Directory</h3>
-        <span class="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
+<div class="bg-gray-900 border border-gray-800 rounded-lg shadow-sm overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-800 bg-gray-800 flex justify-between items-center">
+        <h3 class="text-sm font-semibold text-gray-100">Active Directory</h3>
+        <span class="inline-flex items-center rounded-full bg-blue-900/30 px-2.5 py-0.5 text-xs font-medium text-blue-400 ring-1 ring-inset ring-blue-700/10">
             Total: {{ $agents->total() ?? count($agents) }}
         </span>
     </div>
 
-    <div class="divide-y divide-gray-100">
+    <div class="divide-y divide-gray-800">
         @forelse($agents as $agent)
-        <div class="flex flex-col sm:flex-row sm:items-center gap-4 px-6 py-4 hover:bg-gray-50 transition">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-4 px-6 py-4 hover:bg-gray-800 transition">
 
             {{-- Avatar & Info --}}
             <div class="flex items-center gap-4 flex-1 min-w-0">
                 <div class="relative">
-                    <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-sm font-bold text-blue-700 shrink-0">
+                    <div class="w-10 h-10 rounded-full bg-blue-900/30 flex items-center justify-center text-sm font-bold text-blue-400 shrink-0">
                         {{ strtoupper(substr($agent->name, 0, 1)) }}
                     </div>
                     <span class="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full ring-2 ring-white
@@ -70,7 +70,7 @@
                     </span>
                 </div>
                 <div class="min-w-0">
-                    <p class="text-sm font-semibold text-gray-900 truncate">{{ $agent->name }}</p>
+                    <p class="text-sm font-semibold text-gray-100 truncate">{{ $agent->name }}</p>
                     <p class="text-xs text-gray-500 truncate">{{ $agent->email }}</p>
                 </div>
             </div>
@@ -79,15 +79,15 @@
             <div class="flex items-center gap-6 shrink-0 sm:ml-4">
                 <div class="hidden sm:block text-right">
                     <p class="text-xs font-medium text-gray-500">Max Chats</p>
-                    <p class="text-sm font-semibold text-gray-900">{{ $agent->max_chats ?? config('livechat.default_max_chats', 5) }}</p>
+                    <p class="text-sm font-semibold text-gray-100">{{ $agent->max_chats ?? config('livechat.default_max_chats', 5) }}</p>
                 </div>
 
                 <div class="w-24">
                     @php
                     $statusColors = [
-                    'online' => 'bg-green-100 text-green-800',
-                    'away' => 'bg-yellow-100 text-yellow-800',
-                    'offline' => 'bg-gray-100 text-gray-800'
+                    'online' => 'bg-green-900/30 text-green-300',
+                    'away' => 'bg-yellow-900/30 text-yellow-300',
+                    'offline' => 'bg-gray-800 text-gray-200'
                     ];
                     $statusVal = $agent->status ?? 'offline';
                     $statusClass = $statusColors[$statusVal] ?? $statusColors['offline'];
@@ -97,7 +97,7 @@
                     </span>
                 </div>
 
-                <div class="border-l border-gray-200 pl-4">
+                <div class="border-l border-gray-700 pl-4">
                     @if($agent->id !== auth()->id())
                     <form method="POST" action="{{ route('admin.agents.destroy', $agent->id) }}" onsubmit="return confirm('Remove this agent? This action cannot be undone.')">
                         @csrf

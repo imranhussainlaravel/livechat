@@ -3,7 +3,7 @@
 <a href="{{ $href }}"
     class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition
           {{ $active
-              ? 'bg-indigo-500/15 text-indigo-300 font-medium'
-              : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800' }}">
+              ? 'bg-[#F0644B]/15 text-[#F0644B] font-semibold'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' }}">
     {{ $slot }}
 </a>
