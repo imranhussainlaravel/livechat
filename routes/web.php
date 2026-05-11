@@ -167,3 +167,14 @@ Route::prefix('admin')
 // Standard broadcast auth for agents (uses session)
 Broadcast::routes();
 require __DIR__.'/channels.php';
+
+Route::get('/test-notify/{chatId}', function($chatId) {
+    $chat = \App\Models\Chat::find($chatId);
+    if (!$chat) return "Chat not found";
+    $msg = $chat->messages()->create([
+        'sender_type' => \App\Enums\MessageSenderType::AGENT,
+        'message' => 'TEST MESSAGE ' . now()->toTimeString(),
+    ]);
+    event(new \App\Events\NewMessage($msg));
+    return "Event fired for chat $chatId. Check the visitor widget!";
+});

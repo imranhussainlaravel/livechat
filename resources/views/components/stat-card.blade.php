@@ -1,12 +1,12 @@
-@props(['title', 'value', 'icon' => null, 'color' => 'blue'])
+﻿@props(['title', 'value', 'icon' => null, 'color' => 'blue'])
 
 @php
 $bgClasses = [
-'blue' => 'bg-[#F0644B]/10 text-[#F0644B] border-[#F0644B]/20 shadow-[#F0644B]/10',
+'blue' => 'bg-[#6366F1]/10 text-[#6366F1] border-[#6366F1]/20 shadow-[#6366F1]/10',
 'yellow' => 'bg-amber-500/10 text-amber-400 border-amber-500/20 shadow-amber-500/10',
 'red' => 'bg-rose-500/10 text-rose-400 border-rose-500/20 shadow-rose-500/10',
 'green' => 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-emerald-500/10',
-'indigo' => 'bg-[#F0644B]/10 text-[#F0644B] border-[#F0644B]/20 shadow-[#F0644B]/10',
+'indigo' => 'bg-[#6366F1]/10 text-[#6366F1] border-[#6366F1]/20 shadow-[#6366F1]/10',
 'teal' => 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20 shadow-cyan-500/10',
 'gray' => 'bg-slate-800/50 text-slate-400 border-slate-700/50 shadow-slate-900/10',
 ][$color] ?? 'bg-slate-800/50 text-slate-400 border-slate-700/50 shadow-slate-900/10';

@@ -14,24 +14,23 @@ class ChatQueueUpdated implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    /**
-     * Create a new event instance.
-     */
-    public function __construct()
-    {
-        // Add pending chats count if available
-    }
+    public function __construct(public int $pendingCount = 0) {}
 
-    /**
-     * Get the channels the event should broadcast on.
-     *
-     * @return array<int, \Illuminate\Broadcasting\Channel>
-     */
     public function broadcastOn(): array
     {
         return [
             new PrivateChannel('admin.queue'),
             new PrivateChannel('agent.queue'),
         ];
+    }
+
+    public function broadcastAs(): string
+    {
+        return 'queue.updated';
+    }
+
+    public function broadcastWith(): array
+    {
+        return ['pending_count' => $this->pendingCount];
     }
 }

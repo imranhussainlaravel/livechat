@@ -8,9 +8,31 @@
     <link rel="icon" type="image/webp" href="https://images.nexonpackaging.com/logo.webp">
     <link rel="stylesheet" href="/css/app.css">
     <script src="/js/app.js"></script>
-    <!-- Tailwind CSS (temporary CDN for prototyping if Vite isn't setup fully for UI yet, otherwise use Vite) -->
+
+    <!-- DOMContentLoaded compat shim: must load FIRST so per-page scripts work after Turbo navigation -->
+    <script>
+    (function() {
+        var domReady = false;
+        document.addEventListener('DOMContentLoaded', function() { domReady = true; });
+        var _orig = EventTarget.prototype.addEventListener;
+        EventTarget.prototype.addEventListener = function(type, fn, opts) {
+            if (this === document && type === 'DOMContentLoaded' && domReady) {
+                setTimeout(fn, 0); // fire immediately on Turbo nav
+                return;
+            }
+            return _orig.apply(this, arguments);
+        };
+    })();
+    </script>
+
+    <!-- Turbo: SPA-like navigation (no full reloads) -->
+    <script src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@8.0.12/dist/turbo.es2017-umd.js"></script>
+
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/alpinejs" defer></script>
+
+    @stack('head')
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,8 +40,8 @@
 
     <style>
         :root {
-            --brand-primary: #F0644B;
-            --brand-primary-soft: rgba(240, 100, 75, 0.1);
+            --brand-primary: #6366F1;
+            --brand-primary-soft: rgba(99, 102, 241, 0.1);
         }
         body { font-family: 'Inter', sans-serif; }
         
@@ -66,7 +88,7 @@
 <body class="bg-slate-950 text-slate-100 font-sans antialiased h-screen flex overflow-hidden relative">
     <!-- Background Decor (Matches Login Page) -->
     <div class="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
-        <div class="absolute top-[-10%] right-[-10%] w-[60%] h-[60%] bg-[#F0644B]/10 blur-[150px] rounded-full"></div>
+        <div class="absolute top-[-10%] right-[-10%] w-[60%] h-[60%] bg-[#6366F1]/10 blur-[150px] rounded-full"></div>
         <div class="absolute bottom-[-10%] left-[-10%] w-[60%] h-[60%] bg-indigo-500/5 blur-[150px] rounded-full"></div>
     </div>
 
@@ -193,29 +215,180 @@
         });
         // ---- UNREAD NOTIFICATIONS LOGIC ----
         window.unreadChats = JSON.parse(localStorage.getItem('unreadChats') || '[]');
-        
+
         function updateUnreadUI() {
-            // Update sidebar badge
-            const badge = document.getElementById('unread-chat-counter');
-            if (badge) {
-                if (window.unreadChats.length > 0) {
-                    badge.textContent = window.unreadChats.length;
+            // Always re-read from localStorage so cross-page changes are picked up
+            window.unreadChats = JSON.parse(localStorage.getItem('unreadChats') || '[]');
+            var count = window.unreadChats.length;
+
+            // My Chats badge (querySelectorAll handles admin + agent sidebar duplicates)
+            document.querySelectorAll('#unread-chat-counter').forEach(function(badge) {
+                badge.textContent = count;
+                if (count > 0) {
                     badge.classList.remove('hidden');
+                    badge.style.transition = 'transform 0.3s ease';
+                    badge.style.transform = 'scale(1.3)';
+                    setTimeout(function() { badge.style.transform = ''; }, 350);
                 } else {
                     badge.classList.add('hidden');
                 }
-            }
+            });
 
-            // Update red dots on the chat list page if present
-            document.querySelectorAll('[class^="unread-dot-"]').forEach(el => el.classList.add('hidden'));
-            window.unreadChats.forEach(chatId => {
-                const dot = document.querySelector('.unread-dot-' + chatId);
-                if (dot) dot.classList.remove('hidden');
+            // Monitor badge
+            document.querySelectorAll('#monitor-unread-counter').forEach(function(badge) {
+                badge.textContent = count;
+                if (count > 0) {
+                    badge.classList.remove('hidden');
+                    badge.style.transition = 'transform 0.3s ease';
+                    badge.style.transform = 'scale(1.3)';
+                    setTimeout(function() { badge.style.transform = ''; }, 350);
+                } else {
+                    badge.classList.add('hidden');
+                }
+            });
+
+            // Per-chat unread dots — hide all, then show only unread ones
+            document.querySelectorAll('[class*="unread-dot-"]').forEach(function(el) {
+                el.classList.add('hidden');
+            });
+            window.unreadChats.forEach(function(chatId) {
+                document.querySelectorAll('.unread-dot-' + chatId).forEach(function(dot) {
+                    dot.classList.remove('hidden');
+                });
             });
         }
-        
+
+        // ---- REAL-TIME QUEUE COUNT ----
+        function updateQueueCount(count) {
+            document.querySelectorAll('#sidebar-queue-count').forEach(function(badge) {
+                badge.textContent = count;
+                if (count > 0) {
+                    badge.classList.remove('hidden');
+                    badge.style.transition = 'transform 0.3s ease';
+                    badge.style.transform = 'scale(1.3)';
+                    setTimeout(function() { badge.style.transform = ''; }, 350);
+                } else {
+                    badge.classList.add('hidden');
+                }
+            });
+        }
+
+        // Auto-clear unread when viewing a specific chat page
+        function clearUnreadForCurrentChat() {
+            var match = window.location.pathname.match(/\/chats\/(\d+)/);
+            if (match) {
+                var openChatId = parseInt(match[1], 10);
+                var stored = JSON.parse(localStorage.getItem('unreadChats') || '[]');
+                var idx = stored.indexOf(openChatId);
+                if (idx !== -1) {
+                    stored.splice(idx, 1);
+                    localStorage.setItem('unreadChats', JSON.stringify(stored));
+                }
+                if (window.unreadChats) {
+                    var memIdx = window.unreadChats.indexOf(openChatId);
+                    if (memIdx !== -1) window.unreadChats.splice(memIdx, 1);
+                }
+            }
+        }
+
         // Call immediately to render any initial unread state
+        clearUnreadForCurrentChat();
         updateUnreadUI();
+
+        // Re-sync badges after every Turbo navigation (including cached page restores)
+        document.addEventListener('turbo:load', function() { clearUnreadForCurrentChat(); updateUnreadUI(); });
+        document.addEventListener('turbo:render', function() { clearUnreadForCurrentChat(); updateUnreadUI(); });
+
+        // ---- FLASH A CHAT ROW (Chats & Monitor pages) ----
+        function flashChatRow(chatId) {
+            var row = document.querySelector('[data-chat-id="' + chatId + '"]');
+            if (!row) return;
+            row.style.transition = 'background-color 0.4s ease';
+            row.style.backgroundColor = 'rgba(99,102,241,0.15)';
+            setTimeout(function() { row.style.backgroundColor = ''; }, 2500);
+        }
+
+        // ---- INJECT NEW PENDING CHAT ROW (Pending Queue page) ----
+        function injectPendingChatRow(data) {
+            var isQueuePage = /\/queue/.test(window.location.pathname);
+            if (!isQueuePage) return;
+
+            var list = document.querySelector('.divide-y.divide-gray-800');
+            if (!list) return;
+
+            // Remove the "empty queue" state if it's there
+            var empty = list.querySelector('.px-6.py-20');
+            if (empty) list.innerHTML = '';
+
+            // Avoid duplicate injection
+            if (list.querySelector('[data-chat-id="' + data.chat_id + '"]')) return;
+
+            var csrf = (document.querySelector('input[name="_token"]') || {}).value || '{{ csrf_token() }}';
+            var initial = (data.visitor_name || 'V').charAt(0).toUpperCase();
+
+            var row = document.createElement('div');
+            row.setAttribute('data-chat-id', data.chat_id);
+            row.className = 'flex flex-col sm:flex-row sm:items-center gap-4 px-6 py-5 transition relative';
+            row.style.backgroundColor = 'rgba(99,102,241,0.15)';
+            row.innerHTML =
+                '<div class="flex-1 min-w-0 flex items-center gap-4">' +
+                    '<div class="w-12 h-12 rounded-full bg-[#6366F1]/20 flex items-center justify-center text-lg font-bold text-[#6366F1] shrink-0">' + initial + '</div>' +
+                    '<div>' +
+                        '<div class="flex items-center gap-2 mb-1">' +
+                            '<p class="text-sm font-semibold text-gray-100">' + (data.visitor_name || 'Visitor') + '</p>' +
+                            '<span class="text-xs text-gray-500">#' + data.chat_id + '</span>' +
+                            '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 animate-pulse">New</span>' +
+                        '</div>' +
+                        '<p class="text-sm text-gray-400">Just connected</p>' +
+                        '<span class="inline-flex items-center text-xs text-gray-400 mt-1">' +
+                            '<svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>' +
+                            'Just now' +
+                        '</span>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="flex items-center gap-3 shrink-0">' +
+                    '<form method="POST" action="/agent/queue/' + data.chat_id + '/join" data-ajax-form>' +
+                        '<input type="hidden" name="_token" value="' + csrf + '">' +
+                        '<button type="submit" class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-[#6366F1] hover:bg-[#4F46E5] transition-all active:scale-95">' +
+                            '<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>' +
+                            'Join Conversation' +
+                        '</button>' +
+                    '</form>' +
+                '</div>';
+
+            list.insertBefore(row, list.firstChild);
+            // Fade background highlight out after 2 seconds
+            setTimeout(function() {
+                row.style.transition = 'background-color 0.6s ease';
+                row.style.backgroundColor = '';
+            }, 2000);
+        }
+
+        // ---- TURBO HOOKS ----
+        // Re-initialize Alpine after each Turbo navigation
+        document.addEventListener('turbo:load', function() {
+            updateUnreadUI();
+            if (window.Alpine) window.Alpine.initTree(document.body);
+        });
+
+        // Destroy Chart.js before page is cached to prevent "canvas in use" errors on back navigation
+        document.addEventListener('turbo:before-cache', function() {
+            if (window.Chart) {
+                document.querySelectorAll('canvas').forEach(function(c) {
+                    var ch = window.Chart.getChart(c);
+                    if (ch) ch.destroy();
+                });
+            }
+        });
+
+        // Clean up per-chat Echo subscriptions when leaving a chat page
+        document.addEventListener('turbo:before-render', function() {
+            if (window._chatChannelId != null && window.Echo) {
+                try { window.Echo.leave('chat.' + window._chatChannelId); } catch(e) {}
+                try { window.Echo.leave('chat-room.' + window._chatChannelId); } catch(e) {}
+                window._chatChannelId = null;
+            }
+        });
 
         // Push Notification Permission
         if ("Notification" in window) {
@@ -235,43 +408,66 @@
                 loadScript('https://unpkg.com/pusher-js@8.3.0/dist/web/pusher.min.js'),
                 loadScript('https://unpkg.com/laravel-echo@1.15.3/dist/echo.iife.js')
             ]).then(() => {
-                if (!window.Echo) {
-                    window.Echo = new window.Echo({
-                        broadcaster: 'pusher',
-                        key: '54ff5280f5ead0e4ec9f', // From config
-                        cluster: 'mt1',
-                        forceTLS: true,
-                        authEndpoint: '/broadcasting/auth',
-                        auth: {
-                            headers: { 'X-CSRF-TOKEN': document.querySelector('input[name="_token"]')?.value || '{{ csrf_token() }}' }
-                        }
-                    });
+                // CRITICAL: If Echo is already initialized with a working Pusher connection,
+                // do NOT disconnect/recreate it. Turbo re-runs this script on every
+                // navigation — we must preserve the existing connection + channel subscriptions.
+                if (window._globalEchoInitDone) {
+                    console.log('[Echo] Already initialized, skipping.');
+                    return;
                 }
 
-                const currentUserId = {{ auth()->id() }};
-                const isAdmin = {{ auth()->user()->isAdmin() ? 'true' : 'false' }};
-                const channelName = isAdmin ? 'admin' : 'agent.' + currentUserId;
-                
-                // Listen globally
-                console.log('Registering global Echo listener on channel:', channelName);
+                console.log('[Echo] First-time initialization...');
+
+                // The bundled app.js creates window.Echo with a broken reverb config
+                // (key: undefined, wsHost: undefined). We MUST overwrite it.
+                var EchoConstructor = null;
+                if (window.Echo) {
+                    EchoConstructor = window.Echo.constructor;
+                    try { window.Echo.disconnect(); } catch(e) {}
+                }
+                if (!EchoConstructor || EchoConstructor === Object || EchoConstructor === Function) {
+                    EchoConstructor = window.Echo;
+                }
+
+                window.Echo = new EchoConstructor({
+                    broadcaster: 'pusher',
+                    key: '54ff5280f5ead0e4ec9f',
+                    cluster: 'mt1',
+                    forceTLS: true,
+                    authEndpoint: '/broadcasting/auth',
+                    auth: {
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content
+                                || document.querySelector('input[name="_token"]')?.value
+                                || '{{ csrf_token() }}'
+                        }
+                    }
+                });
+
+                console.log('[Echo] Echo created. Pusher OK:', !!window.Echo?.connector?.pusher);
+
+                window._globalEchoInitDone = true;
+
+                var currentUserId = {{ auth()->id() }};
+                var isAdmin = {{ auth()->user()->isAdmin() ? 'true' : 'false' }};
+                var channelName = isAdmin ? 'admin' : 'agent.' + currentUserId;
+
+                console.log('[Echo] Subscribing — user:', currentUserId, 'isAdmin:', isAdmin, 'channel:', channelName);
+
+                // Personal channel — new visitor messages
                 window.Echo.private(channelName)
                     .listen('.message.new', function(e) {
-                        console.log('GLOBAL LISTENER RECEIVED message.new EVENT:', e);
-                        // If it's a message from the visitor, and we are not currently on that chat's page
+                        console.log('[Echo] .message.new received:', e);
                         if (e.sender_type === 'visitor') {
-                            const isCurrentChatPage = window.location.pathname.includes('/chats/' + e.chat_id);
-                            console.log('Is current chat page?', isCurrentChatPage);
-                            
+                            var isCurrentChatPage = window.location.pathname.includes('/chats/' + e.chat_id);
                             if (!isCurrentChatPage) {
-                                // Add to unread tracking
                                 if (!window.unreadChats.includes(e.chat_id)) {
-                                    console.log('Adding to unread tracking:', e.chat_id);
                                     window.unreadChats.push(e.chat_id);
                                     localStorage.setItem('unreadChats', JSON.stringify(window.unreadChats));
-                                    updateUnreadUI();
                                 }
-
-                                // Show Browser Notification
+                                updateUnreadUI();
+                                flashChatRow(e.chat_id);
+                                showToast('New message from visitor #' + e.chat_id);
                                 if ("Notification" in window && Notification.permission === "granted") {
                                     new Notification("New Message from Visitor", {
                                         body: e.message,
@@ -283,9 +479,29 @@
                             }
                         }
                     })
-                    .error((err) => {
-                        console.error("Echo channel error:", err);
+                    .error(function(err) {
+                        console.error('[Echo] Channel error on ' + channelName + ':', err);
                     });
+
+                // agents channel — new chat started (pending queue)
+                window.Echo.private('agents')
+                    .listen('.chat.started', function(e) {
+                        console.log('[Echo] .chat.started received:', e);
+                        updateQueueCount(e.pending_count);
+                        showToast('New chat from ' + (e.visitor_name || 'Visitor'));
+                        injectPendingChatRow(e);
+                    });
+
+                // agent.queue channel — queue count changed (accept, close, transfer)
+                window.Echo.private('agent.queue')
+                    .listen('.queue.updated', function(e) {
+                        console.log('[Echo] .queue.updated received:', e);
+                        updateQueueCount(e.pending_count);
+                    });
+
+                console.log('[Echo] All channel subscriptions registered.');
+            }).catch(function(err) {
+                console.error('[Echo] Failed to load CDN scripts:', err);
             });
         @endif
     </script>

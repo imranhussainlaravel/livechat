@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" class="dark">
 
 <head>
@@ -17,8 +17,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --brand-primary: #F0644B;
-            --brand-primary-soft: rgba(240, 100, 75, 0.1);
+            --brand-primary: #6366F1;
+            --brand-primary-soft: rgba(99, 102, 241, 0.1);
         }
         body { font-family: 'Inter', sans-serif; }
         .text-brand { color: var(--brand-primary); }
@@ -28,10 +28,10 @@
     </style>
 </head>
 
-<body class="bg-slate-950 text-slate-100 antialiased min-h-screen flex selection:bg-[#F0644B] selection:text-white relative">
+<body class="bg-slate-950 text-slate-100 antialiased min-h-screen flex selection:bg-[#6366F1] selection:text-white relative">
     <!-- Background Decor (Matches Login Page) -->
     <div class="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
-        <div class="absolute top-[-10%] right-[-10%] w-[60%] h-[60%] bg-[#F0644B]/10 blur-[150px] rounded-full"></div>
+        <div class="absolute top-[-10%] right-[-10%] w-[60%] h-[60%] bg-[#6366F1]/10 blur-[150px] rounded-full"></div>
         <div class="absolute bottom-[-10%] left-[-10%] w-[60%] h-[60%] bg-indigo-500/5 blur-[150px] rounded-full"></div>
     </div>
 
@@ -41,7 +41,7 @@
             <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3">
                 <img src="https://images.nexonpackaging.com/logo.webp" alt="Nexon" class="h-8 w-auto object-contain">
                 <div class="flex flex-col">
-                    <span class="text-[10px] font-black text-[#F0644B] uppercase tracking-[0.2em] leading-none mb-0.5">Nexon</span>
+                    <span class="text-[10px] font-black text-[#6366F1] uppercase tracking-[0.2em] leading-none mb-0.5">Nexon</span>
                     <span class="text-xs font-bold text-slate-100 uppercase tracking-wider leading-none">Live Chat</span>
                 </div>
             </a>
@@ -83,7 +83,7 @@
         {{-- User Info --}}
         <div class="p-5 border-t border-slate-700/50 bg-slate-800/30">
             <div class="flex items-center gap-3 mb-4">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#F0644B] to-[#ff8c7a] flex items-center justify-center text-sm font-bold text-white shadow-lg shadow-[#F0644B]/20">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#6366F1] to-[#818CF8] flex items-center justify-center text-sm font-bold text-white shadow-lg shadow-[#6366F1]/20">
                     {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
                 </div>
                 <div class="flex-1 min-w-0">

@@ -10,6 +10,7 @@ use App\Enums\QueueStatus;
 use App\Enums\MessageSenderType;
 use App\Events\ChatAssigned;
 use App\Events\ChatClosed;
+use App\Events\ChatQueueUpdated;
 use App\Events\ChatStarted;
 use App\Events\ChatStatusUpdated;
 use App\Events\ChatTransferred;
@@ -28,6 +29,7 @@ class ChatService
         private MessageRepositoryInterface $messages,
         private QueueService               $queue,
         private ActivityService            $activity,
+        private WhatsAppService            $whatsApp,
     ) {}
 
     /**
@@ -64,7 +66,7 @@ class ChatService
      */
     public function startChat(StartChatDTO $dto): Chat
     {
-        return DB::transaction(function () use ($dto) {
+        $chat = DB::transaction(function () use ($dto) {
             // Find or create visitor by session token
             $visitor = Visitor::firstOrCreate(
                 ['session_token' => $dto->sessionToken],
@@ -95,6 +97,11 @@ class ChatService
 
             return $chat;
         });
+
+        // Send WhatsApp group notification after DB commit
+        $this->whatsApp->notifyNewChat($chat);
+
+        return $chat;
     }
 
     /* ================================================================== */
@@ -126,6 +133,14 @@ class ChatService
             $chat = $chat->fresh(['visitor', 'agent']);
 
             event(new ChatAssigned($chat, $chat->agent));
+
+            // Notify all agents/admins that the pending queue count has dropped
+            event(new ChatQueueUpdated(
+                Chat::where('queue_status', QueueStatus::QUEUED)
+                    ->whereNull('assigned_agent_id')
+                    ->where('status', ChatStatus::PENDING)
+                    ->count()
+            ));
 
             return $chat;
         });

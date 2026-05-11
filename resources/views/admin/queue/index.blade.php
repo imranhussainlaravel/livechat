@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 @section('header_title', 'System Queue Monitor')
 
 @section('content')
@@ -15,7 +15,7 @@
         @forelse($chats as $chat)
         <div class="flex flex-col sm:flex-row sm:items-center gap-4 px-6 py-5 hover:bg-gray-800 transition relative">
             <div class="flex-1 min-w-0 flex items-center gap-4">
-                <div class="w-12 h-12 rounded-full bg-[#F0644B]/10 border border-[#F0644B]/20 flex items-center justify-center text-lg font-bold text-[#F0644B] shrink-0">
+                <div class="w-12 h-12 rounded-full bg-[#6366F1]/10 border border-[#6366F1]/20 flex items-center justify-center text-lg font-bold text-[#6366F1] shrink-0">
                     {{ strtoupper(substr($chat->visitor->name ?? 'V', 0, 1)) }}
                 </div>
                 <div>

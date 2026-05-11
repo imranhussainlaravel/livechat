@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 @section('header_title', 'All Chats')
 
 @section('content')
@@ -11,30 +11,38 @@
 </div>
 
 {{-- Filters --}}
-<div class="bg-gray-900 p-4 rounded-lg shadow-sm border border-gray-800 mb-6 flex items-center justify-between">
-    <div class="flex items-center gap-3">
-        <label for="status-filter" class="text-sm font-medium text-gray-300">Filter by status:</label>
-        @php $currentStatus = request('status', 'all'); @endphp
-        <select id="status-filter" 
-            onchange="window.location.href = this.value"
-            class="block w-48 rounded-md border-gray-600 py-2 pl-3 pr-10 text-base focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm shadow-sm">
-            @foreach(['all', 'pending', 'assigned', 'active', 'closed', 'transferred'] as $filter)
-                <option value="{{ route('agent.chats.index', ['status' => $filter]) }}" {{ $currentStatus === $filter ? 'selected' : '' }}>
-                    {{ ucfirst(str_replace('_', ' ', $filter)) }}
-                </option>
-            @endforeach
-        </select>
-    </div>
+@php $currentStatus = request('status', 'all'); @endphp
+<div class="flex items-center gap-3 mb-5 flex-wrap">
+    @foreach(['all', 'pending', 'assigned', 'active', 'closed', 'transferred'] as $filter)
+    @php
+        $isActive = $currentStatus === $filter;
+        $colors = [
+            'all'         => 'bg-slate-700 text-slate-200 border-slate-600',
+            'pending'     => 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+            'assigned'    => 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+            'active'      => 'bg-[#6366F1]/20 text-[#6366F1] border-[#6366F1]/40',
+            'closed'      => 'bg-slate-700/50 text-slate-400 border-slate-600/50',
+            'transferred' => 'bg-purple-500/20 text-purple-300 border-purple-500/40',
+        ];
+        $activeClass  = $colors[$filter] ?? 'bg-slate-700 text-slate-200 border-slate-600';
+        $defaultClass = 'bg-slate-800/50 text-slate-400 border-slate-700/50 hover:bg-slate-700/50 hover:text-slate-300';
+    @endphp
+    <a href="{{ route('agent.chats.index', ['status' => $filter]) }}"
+       onclick="event.preventDefault(); Turbo.visit(this.href)"
+       class="px-3.5 py-1.5 rounded-lg border text-xs font-semibold transition-all {{ $isActive ? $activeClass : $defaultClass }}">
+        {{ ucfirst(str_replace('_', ' ', $filter)) }}
+    </a>
+    @endforeach
 </div>
 
 {{-- Chat List --}}
 <div class="bg-gray-900 border border-gray-800 rounded-lg shadow-sm overflow-hidden">
     <div class="divide-y divide-gray-800">
         @forelse($chats ?? [] as $chat)
-        <div class="group flex flex-col sm:flex-row sm:items-center gap-4 px-6 py-4 hover:bg-gray-800 transition relative chat-row cursor-pointer" data-chat-id="{{ $chat->id }}" onclick="window.location.href='{{ route('agent.chats.show', $chat->id) }}'">
+        <div class="group flex flex-col sm:flex-row sm:items-center gap-4 px-6 py-4 hover:bg-gray-800 transition relative chat-row cursor-pointer" data-chat-id="{{ $chat->id }}" onclick="Turbo.visit('{{ route('agent.chats.show', $chat->id) }}')"  >
             <div class="flex-1 min-w-0 flex items-center gap-4 relative z-10 pointer-events-none">
                 <div class="relative">
-                    <div class="w-12 h-12 rounded-full bg-[#F0644B] flex items-center justify-center text-lg font-bold text-white shadow-sm shrink-0">
+                    <div class="w-12 h-12 rounded-full bg-[#6366F1] flex items-center justify-center text-lg font-bold text-white shadow-sm shrink-0">
                         {{ strtoupper(substr($chat->visitor->name ?? 'V', 0, 1)) }}
                     </div>
                     <!-- Unread Indicator Dot -->

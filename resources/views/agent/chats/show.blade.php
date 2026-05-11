@@ -1,6 +1,10 @@
 @extends('layouts.app')
 @section('header_title', 'Chat #' . $chat->id)
 
+@push('head')
+<meta name="turbo-cache-control" content="no-cache">
+@endpush
+
 @section('content')
 
 <style>
@@ -18,7 +22,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                     </svg>
                 </a>
-                <div id="visitor-header-initial" class="w-10 h-10 rounded-full bg-[#F0644B]/30 flex items-center justify-center text-lg font-bold text-[#F0644B] shrink-0">
+                <div id="visitor-header-initial" class="w-10 h-10 rounded-full bg-[#6366F1]/30 flex items-center justify-center text-lg font-bold text-[#6366F1] shrink-0">
                     {{ strtoupper(substr($chat->visitor->name ?? 'V', 0, 1)) }}
                 </div>
                 <div>
@@ -96,7 +100,7 @@
                 @endforelse
             </div>
 
-            {{-- Scroll to Bottom Arrow (WhatsApp style) --}}
+            {{-- Scroll to Bottom Arrow --}}
             <button id="scroll-to-bottom" type="button"
                 style="display:none; position:absolute; bottom:20px; right:20px; z-index:99; width:40px; height:40px; border-radius:50%; background:#3b82f6; color:#fff; border:2px solid #fff; box-shadow:0 4px 12px rgba(0,0,0,0.25); cursor:pointer; align-items:center; justify-content:center; transition:transform 0.2s ease;">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -117,8 +121,8 @@
 
         {{-- Message Input --}}
         @if(! in_array($chat->status->value, ['closed']))
-        <form method="POST" action="{{ route('agent.chats.message', $chat->id) }}" id="message-form" 
-              class="bg-gray-900 border-t border-gray-800 p-4 sticky bottom-0 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+        <form method="POST" action="{{ route('agent.chats.message', $chat->id) }}" id="message-form"
+              class="bg-gray-900 border-t border-gray-800 p-4 sticky bottom-0 z-10">
             @csrf
             <div class="flex items-end gap-3 rounded-lg border border-gray-600 bg-gray-900 px-3 py-2 shadow-sm focus-within:ring-1 focus-within:ring-blue-500 focus-within:border-blue-500">
                 <textarea name="message" id="message-input" required autocomplete="off" rows="1"
@@ -160,13 +164,20 @@
 
         // ---- CLEAR UNREAD STATUS ----
         var chatId = {{ $chat->id }};
+        // Remove from localStorage
         var storedUnreads = JSON.parse(localStorage.getItem('unreadChats') || '[]');
         var index = storedUnreads.indexOf(chatId);
         if (index !== -1) {
             storedUnreads.splice(index, 1);
             localStorage.setItem('unreadChats', JSON.stringify(storedUnreads));
-            if (typeof updateUnreadUI === 'function') updateUnreadUI();
         }
+        // Also sync the in-memory array used by updateUnreadUI
+        if (window.unreadChats) {
+            var memIdx = window.unreadChats.indexOf(chatId);
+            if (memIdx !== -1) window.unreadChats.splice(memIdx, 1);
+        }
+        // Refresh sidebar badges & dots
+        if (typeof updateUnreadUI === 'function') updateUnreadUI();
 
         // ---- SCROLL TO BOTTOM ----
         function scrollToBottom(smooth) {
@@ -207,7 +218,7 @@
             var html = '<div class="flex items-start mb-3 flex-row-reverse">' +
                 '<div class="flex flex-col items-end max-w-[85%]">' +
                 '<span class="text-[10px] text-gray-400 mb-0.5 px-1">' + time + '</span>' +
-                '<div class="px-3 py-1.5 rounded-2xl shadow-sm text-[13px] leading-relaxed bg-[#F0644B] text-white rounded-tr-sm">' +
+                '<div class="px-3 py-1.5 rounded-2xl shadow-sm text-[13px] leading-relaxed bg-[#6366F1] text-white rounded-tr-sm">' +
                 escaped + '</div></div></div>';
             container.insertAdjacentHTML('beforeend', html);
             scrollToBottom(true);
@@ -305,40 +316,18 @@
         }
 
         // ---- Laravel Echo / Real-Time Events ----
-        // We load Echo/Pusher from CDN to ensure we have the constructors if app.js doesn't expose them
-        const oldEcho = window.Echo;
-        const loadScript = (src) => new Promise(resolve => {
-            const s = document.createElement('script'); s.src = src; s.onload = resolve; document.head.appendChild(s);
-        });
+        // Reuse the global Echo set up by the layout (same config).
+        // Poll until it is ready, then attach chat-specific subscriptions.
+        var chatId = {{ $chat->id }};
+        var currentUserId = {{ auth()->id() }};
+        window._chatChannelId = chatId; // Lets the global turbo:before-render handler clean up
 
-        Promise.all([
-            loadScript('https://unpkg.com/pusher-js@8.3.0/dist/web/pusher.min.js'),
-            loadScript('https://unpkg.com/laravel-echo@1.15.3/dist/echo.iife.js')
-        ]).then(() => {
-            Pusher.logToConsole = true;
-            if (oldEcho && typeof oldEcho.disconnect === 'function') {
-                oldEcho.disconnect();
-            }
-
-            window.Echo = new window.Echo({
-                broadcaster: 'pusher',
-                key: '54ff5280f5ead0e4ec9f',
-                cluster: 'mt1',
-                forceTLS: true,
-                authEndpoint: '/broadcasting/auth',
-                auth: {
-                    headers: {
-                        'X-CSRF-TOKEN': csrfToken
-                    }
-                }
-            });
-
-            var chatId = {{ $chat->id }};
+        function setupChatEcho() {
+            if (!window.Echo) { setTimeout(setupChatEcho, 80); return; }
             var currentUserId = {{ auth()->id() }};
 
             window.Echo.private('chat.' + chatId)
                 .listen('.message.new', function(e) {
-                    console.log("AGENT RECEIVED WS MESSAGE:", e);
                     if (e.sender_type === 'visitor') {
                         appendVisitorMessage(e.message, e.created_at);
                     } else if (e.sender_type === 'system') {
@@ -398,7 +387,8 @@
                 container.insertAdjacentHTML('beforeend', sysHtml);
                 scrollToBottom(true);
             }
-        });
+        } // end setupChatEcho
+        setupChatEcho();
     });
 </script>
 

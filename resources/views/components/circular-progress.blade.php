@@ -1,4 +1,4 @@
-@props([
+﻿@props([
     'title',
     'subtitle' => '', // keeping subtitle as optional, maybe hide it if not needed
     'current' => 0,
@@ -16,9 +16,9 @@
     $dashOffset = $circumference - ($percentage / 100) * $circumference;
     
     $strokeColors = [
-        'blue' => 'text-[#F0644B]',
+        'blue' => 'text-[#6366F1]',
         'green' => 'text-emerald-500',
-        'indigo' => 'text-[#F0644B]',
+        'indigo' => 'text-[#6366F1]',
         'teal' => 'text-cyan-500',
         'yellow' => 'text-amber-500',
         'red' => 'text-rose-500',
@@ -30,7 +30,7 @@
 
 <div class="bg-slate-800/40 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/50 flex items-center justify-between h-full shadow-xl shadow-black/10 transition-all duration-300 hover:bg-slate-800/60 hover:shadow-2xl hover:border-slate-600/50 group">
     <div class="min-w-0 pr-2 relative z-10">
-        <p class="text-sm font-semibold tracking-wide text-slate-400 mb-1.5 truncate" title="{{ $title }}">{{ $title }}</p>
+        <p class="text-sm font-semibold tracking-wide text-slate-400 mb-1.5 leading-tight">{{ $title }}</p>
         <h3 class="text-3xl font-bold tracking-tight text-white flex items-baseline group-hover:text-slate-100 transition-colors">
             {{ $current }}
             <span class="text-lg font-medium text-slate-500 ml-1">/ {{ $total }}</span>

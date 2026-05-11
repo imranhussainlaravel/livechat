@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 @section('header_title', 'Agent Dashboard')
 
 @section('content')
@@ -27,7 +27,7 @@
         {{-- Chart Section --}}
         <div class="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-xl shadow-black/10 overflow-hidden p-6 group">
             <h3 class="text-base font-semibold tracking-wide text-slate-300 mb-6 flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-cyan-500 shadow-[0_0_8px_#06b6d4]"></span>
+                <span class="w-2 h-2 rounded-full bg-cyan-500 "></span>
                 Messages Sent (Last 7 Days)
             </h3>
             <div class="relative h-64 w-full">
@@ -39,7 +39,7 @@
         <div class="bg-slate-800/40 backdrop-blur-xl rounded-2xl border border-slate-700/50 shadow-xl shadow-black/10 overflow-hidden flex flex-col">
             <div class="px-6 py-5 border-b border-slate-700/50 bg-slate-800/30 flex items-center justify-between">
                 <h3 class="font-semibold text-slate-200">Your Active Chats</h3>
-                <a href="{{ route('agent.chats.index') }}" class="text-sm font-semibold text-[#F0644B] hover:text-[#F0644B]/80 transition-colors">
+                <a href="{{ route('agent.chats.index') }}" class="text-sm font-semibold text-[#6366F1] hover:text-[#6366F1]/80 transition-colors">
                     View All &rarr;
                 </a>
             </div>
@@ -58,7 +58,7 @@
                     </div>
                     <div class="flex items-center gap-3">
                         <span class="text-xs font-semibold px-3 py-1 rounded-full border
-                                    {{ in_array($chat->status->value, ['active', 'assigned']) ? 'bg-[#F0644B]/10 text-[#F0644B] border-[#F0644B]/20' : 'bg-slate-700/30 text-slate-400 border-slate-600/30' }}">
+                                    {{ in_array($chat->status->value, ['active', 'assigned']) ? 'bg-[#6366F1]/10 text-[#6366F1] border-[#6366F1]/20' : 'bg-slate-700/30 text-slate-400 border-slate-600/30' }}">
                             {{ ucfirst(str_replace('_', ' ', $chat->status->value)) }}
                         </span>
                         <span class="text-xs text-slate-500 font-medium whitespace-nowrap">{{ $chat->updated_at->diffForHumans() }}</span>
@@ -87,7 +87,7 @@
                 <div class="text-center py-4">
                     <span class="text-5xl font-extrabold text-white block mb-2">{{ $metrics['pending_queue'] }}</span>
                     <p class="text-sm font-medium text-slate-400 mb-6">Visitors waiting for an agent</p>
-                    <a href="{{ route('agent.chats.index') }}#queue" class="inline-flex justify-center items-center px-4 py-2.5 border border-transparent text-sm font-semibold rounded-xl text-white bg-[#F0644B] hover:bg-[#d9533a] transition-all w-full shadow-lg shadow-[#F0644B]/30">
+                    <a href="{{ route('agent.chats.index') }}#queue" class="inline-flex justify-center items-center px-4 py-2.5 border border-transparent text-sm font-semibold rounded-xl text-white bg-[#6366F1] hover:bg-[#4F46E5] transition-all w-full shadow-lg shadow-[#6366F1]/30">
                         Go to Queue
                     </a>
                 </div>
@@ -118,11 +118,11 @@
                 datasets: [{
                     label: 'Messages Sent',
                     data: data.values,
-                    borderColor: '#F0644B',
+                    borderColor: '#6366F1',
                     backgroundColor: gradient,
                     borderWidth: 3,
                     pointBackgroundColor: '#0f172a',
-                    pointBorderColor: '#F0644B',
+                    pointBorderColor: '#6366F1',
                     pointBorderWidth: 2,
                     pointRadius: 4,
                     pointHoverRadius: 6,

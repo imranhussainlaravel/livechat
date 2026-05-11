@@ -1,13 +1,13 @@
-<div class="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-5 mb-5 shadow-xl" x-data="followupTimer('{{ $scheduledAt }}')">
+﻿<div class="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-5 mb-5 shadow-xl" x-data="followupTimer('{{ $scheduledAt }}')">
     <div class="flex items-center justify-between mb-3">
         <h4 class="text-xs font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2">
-            <svg class="w-4 h-4 text-[#F0644B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4 h-4 text-[#6366F1]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
             Scheduled Follow-up
         </h4>
         <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-widest"
-            :class="isOverdue ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 'bg-[#F0644B]/10 text-[#F0644B] border-[#F0644B]/20'"
+            :class="isOverdue ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 'bg-[#6366F1]/10 text-[#6366F1] border-[#6366F1]/20'"
             x-text="isOverdue ? 'Overdue' : 'Pending'">
         </span>
     </div>
