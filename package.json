@@ -1,0 +1,27 @@
+{
+  "name": "livechat",
+  "version": "1.0.0",
+  "description": "Nexon Packaging live chat app",
+  "main": "convert_theme.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "audit:nexon": "playwright test tests/playwright/nexonpackaging-crawl.spec.js --reporter=list"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/imranhussainlaravel/livechat.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/imranhussainlaravel/livechat/issues"
+  },
+  "homepage": "https://github.com/imranhussainlaravel/livechat#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.60.0"
+  }
+}
