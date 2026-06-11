@@ -28,7 +28,7 @@ class QuotationMail extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Your Quotation from ' . config('app.name'),
+            subject: 'Your Quotation from '.config('app.name'),
         );
     }
 

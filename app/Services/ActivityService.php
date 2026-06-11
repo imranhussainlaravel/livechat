@@ -11,18 +11,18 @@ class ActivityService
     ) {}
 
     public function log(
-        ?int    $userId,
-        string  $action,
+        ?int $userId,
+        string $action,
         ?string $referenceType = null,
-        ?int    $referenceId = null,
-        ?array  $metadata = null,
+        ?int $referenceId = null,
+        ?array $metadata = null,
     ): void {
         $this->activities->log([
-            'user_id'        => $userId,
-            'action'         => $action,
+            'user_id' => $userId,
+            'action' => $action,
             'reference_type' => $referenceType,
-            'reference_id'   => $referenceId,
-            'metadata'       => $metadata,
+            'reference_id' => $referenceId,
+            'metadata' => $metadata,
         ]);
     }
 }

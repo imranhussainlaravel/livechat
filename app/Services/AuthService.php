@@ -12,7 +12,7 @@ class AuthService
 {
     public function __construct(
         private UserRepositoryInterface $users,
-        private ActivityService         $activity,
+        private ActivityService $activity,
     ) {}
 
     /**
@@ -58,9 +58,9 @@ class AuthService
             referenceType: 'User',
             referenceId: $user->id,
             metadata: [
-                'ip'         => $ip,
+                'ip' => $ip,
                 'user_agent' => $userAgent,
-                'role'       => $user->role->value,
+                'role' => $user->role->value,
             ],
         );
 
@@ -71,7 +71,7 @@ class AuthService
         };
 
         return [
-            'user'        => $user->fresh(),
+            'user' => $user->fresh(),
             'redirect_to' => $redirect,
         ];
     }

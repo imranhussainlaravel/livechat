@@ -10,10 +10,10 @@ class VisitorResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id'            => $this->id,
+            'id' => $this->id,
             'session_token' => $this->session_token,
-            'name'          => $this->name,
-            'email'         => $this->email,
+            'name' => $this->name,
+            'email' => $this->email,
         ];
     }
 }

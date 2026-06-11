@@ -2,22 +2,21 @@
 
 namespace App\Http\Controllers\Agent;
 
-use App\Http\Controllers\Controller;
-use App\Http\Requests\SendMessageRequest;
-use App\Http\Requests\TransferChatRequest;
 use App\DTOs\SendMessageDTO;
 use App\DTOs\TransferChatDTO;
 use App\Enums\ChatStatus;
 use App\Enums\MessageSenderType;
 use App\Events\AgentJoinedChat;
 use App\Events\AgentLeftChat;
-use App\Events\AgentStatusChanged;
 use App\Events\TypingIndicator;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\SendMessageRequest;
+use App\Http\Requests\TransferChatRequest;
 use App\Repositories\Contracts\ChatRepositoryInterface;
 use App\Repositories\Contracts\MessageRepositoryInterface;
 use App\Repositories\Contracts\UserRepositoryInterface;
-use App\Services\ChatService;
 use App\Services\ActivityService;
+use App\Services\ChatService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use InvalidArgumentException;
@@ -25,10 +24,10 @@ use InvalidArgumentException;
 class ChatController extends Controller
 {
     public function __construct(
-        private ChatService             $chatService,
+        private ChatService $chatService,
         private ChatRepositoryInterface $chats,
         private UserRepositoryInterface $users,
-        private ActivityService         $activity,
+        private ActivityService $activity,
     ) {}
 
     /**
@@ -38,7 +37,7 @@ class ChatController extends Controller
     {
         // By default, showing active assigned/active chats for this agent
         $filters = $request->only(['status', 'per_page']);
-        if (!isset($filters['status'])) {
+        if (! isset($filters['status'])) {
             $filters['status'] = 'active';
         }
 
@@ -61,7 +60,7 @@ class ChatController extends Controller
         // Get available agents & admins for transfer dropdown
         $agents = $this->users->getAgents([
             'roles' => [\App\Enums\UserRole::AGENT, \App\Enums\UserRole::ADMIN],
-            'per_page' => 100
+            'per_page' => 100,
         ]);
 
         // Get Interaction Timeline
@@ -105,7 +104,7 @@ class ChatController extends Controller
         if ($request->expectsJson()) {
             return response()->json([
                 'message' => 'Message sent.',
-                'data'    => $msg->toArray(),
+                'data' => $msg->toArray(),
             ], 201);
         }
 
@@ -127,8 +126,8 @@ class ChatController extends Controller
 
         if ($request->expectsJson()) {
             return response()->json([
-                'message'  => 'Chat transferred.',
-                'redirect' => route('agent.chats.index')
+                'message' => 'Chat transferred.',
+                'redirect' => route('agent.chats.index'),
             ]);
         }
 
@@ -147,7 +146,7 @@ class ChatController extends Controller
 
         try {
             $chat = $this->chats->findById($id);
-            
+
             // 1. Update Priority if provided
             if ($request->has('priority')) {
                 $chat->update(['priority' => $request->priority]);
@@ -160,14 +159,15 @@ class ChatController extends Controller
             }
 
             if ($request->expectsJson()) {
-                return response()->json(['message' => "Chat updated successfully."]);
+                return response()->json(['message' => 'Chat updated successfully.']);
             }
 
-            return back()->with('success', "Chat updated successfully.");
+            return back()->with('success', 'Chat updated successfully.');
         } catch (InvalidArgumentException $e) {
             if ($request->expectsJson()) {
                 return response()->json(['message' => $e->getMessage()], 422);
             }
+
             return back()->withErrors(['status' => $e->getMessage()]);
         }
     }
@@ -182,8 +182,8 @@ class ChatController extends Controller
 
             if ($request->expectsJson()) {
                 return response()->json([
-                    'message'  => 'Chat closed.',
-                    'redirect' => route('agent.chats.index')
+                    'message' => 'Chat closed.',
+                    'redirect' => route('agent.chats.index'),
                 ]);
             }
 
@@ -192,6 +192,7 @@ class ChatController extends Controller
             if ($request->expectsJson()) {
                 return response()->json(['message' => $e->getMessage()], 422);
             }
+
             return back()->withErrors(['error' => $e->getMessage()]);
         }
     }
@@ -243,6 +244,7 @@ class ChatController extends Controller
     public function joinChat(Request $request, int $id): JsonResponse
     {
         event(new AgentJoinedChat($id, $request->user()));
+
         return response()->json(['message' => 'Joined chat.']);
     }
 
@@ -252,6 +254,7 @@ class ChatController extends Controller
     public function leaveChat(Request $request, int $id): JsonResponse
     {
         event(new AgentLeftChat($id, $request->user()));
+
         return response()->json(['message' => 'Left chat.']);
     }
 
@@ -266,7 +269,7 @@ class ChatController extends Controller
         ]);
 
         $visitor = \App\Models\Visitor::findOrFail($id);
-        
+
         $visitor->update([
             'name' => $request->name,
             'email' => $request->email,

@@ -5,8 +5,8 @@ namespace App\Events;
 use App\Models\Chat;
 use App\Models\User;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Broadcasting\PrivateChannel;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
@@ -43,10 +43,10 @@ class ChatAssigned implements ShouldBroadcast
     public function broadcastWith(): array
     {
         return [
-            'chat_id'    => $this->chat->id,
-            'agent_id'   => $this->agent->id,
+            'chat_id' => $this->chat->id,
+            'agent_id' => $this->agent->id,
             'agent_name' => $this->agent->name,
-            'status'     => $this->chat->status,
+            'status' => $this->chat->status,
         ];
     }
 }

@@ -2,8 +2,8 @@
 
 namespace App\Repositories;
 
-use App\Models\Followup;
 use App\Enums\FollowupStatus;
+use App\Models\Followup;
 use App\Repositories\Contracts\FollowupRepositoryInterface;
 
 class FollowupRepository implements FollowupRepositoryInterface

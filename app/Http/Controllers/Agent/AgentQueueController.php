@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers\Agent;
 
+use App\Enums\ChatStatus;
+use App\Enums\MessageSenderType;
+use App\Enums\QueueStatus;
+use App\Events\ChatAssigned;
 use App\Http\Controllers\Controller;
 use App\Models\Chat;
 use App\Models\ChatMessage;
-use App\Enums\ChatStatus;
-use App\Enums\QueueStatus;
-use App\Enums\MessageSenderType;
-use App\Events\ChatAssigned;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -24,7 +24,7 @@ class AgentQueueController extends Controller
             ->whereNull('assigned_agent_id')
             ->where('status', ChatStatus::PENDING)
             ->orderBy('created_at', 'asc')
-            ->with(['visitor', 'messages' => fn($q) => $q->latest()->limit(1)])
+            ->with(['visitor', 'messages' => fn ($q) => $q->latest()->limit(1)])
             ->get();
 
         return view('agent.queue.index', compact('chats'));
@@ -35,9 +35,9 @@ class AgentQueueController extends Controller
      */
     public function joinChat(Request $request, $conversation_id)
     {
-        $agentId   = $request->user()->id;
+        $agentId = $request->user()->id;
         $agentName = $request->user()->name;
-        $user      = $request->user();
+        $user = $request->user();
 
         try {
             DB::transaction(function () use ($conversation_id, $agentId, $agentName, $user) {
@@ -55,16 +55,16 @@ class AgentQueueController extends Controller
                 // System update conversation
                 $chat->update([
                     'assigned_agent_id' => $agentId,
-                    'queue_status'      => QueueStatus::PICKED,
-                    'status'            => ChatStatus::ACTIVE,
+                    'queue_status' => QueueStatus::PICKED,
+                    'status' => ChatStatus::ACTIVE,
                 ]);
 
                 // Insert System message
                 ChatMessage::create([
-                    'chat_id'     => $chat->id,
+                    'chat_id' => $chat->id,
                     'sender_type' => MessageSenderType::SYSTEM,
-                    'sender_id'   => null,
-                    'message'     => 'Agent ' . $agentName . ' joined the chat',
+                    'sender_id' => null,
+                    'message' => 'Agent '.$agentName.' joined the chat',
                 ]);
 
                 // Fire event
@@ -73,8 +73,8 @@ class AgentQueueController extends Controller
 
             if ($request->expectsJson()) {
                 return response()->json([
-                    'message'  => 'You have joined the chat.',
-                    'redirect' => route('agent.chats.show', $conversation_id)
+                    'message' => 'You have joined the chat.',
+                    'redirect' => route('agent.chats.show', $conversation_id),
                 ]);
             }
 
@@ -83,6 +83,7 @@ class AgentQueueController extends Controller
             if ($request->expectsJson()) {
                 return response()->json(['error' => $e->getMessage()], 400);
             }
+
             return back()->with('error', $e->getMessage());
         }
     }

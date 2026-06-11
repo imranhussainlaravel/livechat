@@ -26,11 +26,11 @@ class ChatQueueService
         Redis::rpush(self::QUEUE_KEY, $chatId);
 
         // Store metadata: queued_at timestamp for timeout tracking
-        Redis::hset(self::META_KEY . $chatId, 'queued_at', now()->timestamp);
-        Redis::hset(self::META_KEY . $chatId, 'chat_id', $chatId);
+        Redis::hset(self::META_KEY.$chatId, 'queued_at', now()->timestamp);
+        Redis::hset(self::META_KEY.$chatId, 'chat_id', $chatId);
 
         // Set a generous TTL on metadata to auto-cleanup stale entries
-        Redis::expire(self::META_KEY . $chatId, 3600);
+        Redis::expire(self::META_KEY.$chatId, 3600);
     }
 
     /**
@@ -46,7 +46,7 @@ class ChatQueueService
         }
 
         // Clean up metadata
-        Redis::del(self::META_KEY . $chatId);
+        Redis::del(self::META_KEY.$chatId);
 
         return (int) $chatId;
     }
@@ -67,7 +67,7 @@ class ChatQueueService
     public function remove(int $chatId): bool
     {
         $removed = Redis::lrem(self::QUEUE_KEY, 0, $chatId);
-        Redis::del(self::META_KEY . $chatId);
+        Redis::del(self::META_KEY.$chatId);
 
         return $removed > 0;
     }
@@ -105,7 +105,7 @@ class ChatQueueService
      */
     public function isTimedOut(int $chatId): bool
     {
-        $queuedAt = Redis::hget(self::META_KEY . $chatId, 'queued_at');
+        $queuedAt = Redis::hget(self::META_KEY.$chatId, 'queued_at');
 
         if ($queuedAt === null) {
             return false;
@@ -157,7 +157,7 @@ class ChatQueueService
         Redis::del(self::QUEUE_KEY);
 
         foreach ($chatIds as $chatId) {
-            Redis::del(self::META_KEY . $chatId);
+            Redis::del(self::META_KEY.$chatId);
         }
     }
 

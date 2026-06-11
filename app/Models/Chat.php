@@ -3,8 +3,8 @@
 namespace App\Models;
 
 use App\Enums\ChatStatus;
-use App\Enums\QueueStatus;
 use App\Enums\PriorityLevel;
+use App\Enums\QueueStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -32,18 +32,18 @@ class Chat extends Model
     protected function casts(): array
     {
         return [
-            'status'       => ChatStatus::class,
+            'status' => ChatStatus::class,
             'queue_status' => QueueStatus::class,
-            'priority'     => PriorityLevel::class,
-            'metadata'     => 'array',
-            'started_at'   => 'datetime',
-            'ended_at'    => 'datetime',
+            'priority' => PriorityLevel::class,
+            'metadata' => 'array',
+            'started_at' => 'datetime',
+            'ended_at' => 'datetime',
             'followup_at' => 'datetime',
         ];
     }
 
     /* ------------------------------------------------------------------ */
-    /*  Relationships                                                      */
+    /*  Relationships */
     /* ------------------------------------------------------------------ */
 
     public function visitor(): BelongsTo
@@ -77,12 +77,12 @@ class Chat extends Model
     }
 
     /* ------------------------------------------------------------------ */
-    /*  Scopes                                                             */
+    /*  Scopes */
     /* ------------------------------------------------------------------ */
 
     public function scopeActive($query)
     {
-        return $query->whereIn('status', array_map(fn($s) => $s->value, ChatStatus::activeStates()));
+        return $query->whereIn('status', array_map(fn ($s) => $s->value, ChatStatus::activeStates()));
     }
 
     public function scopeQueued($query)
@@ -98,7 +98,7 @@ class Chat extends Model
     }
 
     /* ------------------------------------------------------------------ */
-    /*  Helpers                                                            */
+    /*  Helpers */
     /* ------------------------------------------------------------------ */
 
     public function isActive(): bool

@@ -5,11 +5,11 @@ namespace App\DTOs;
 class StartChatDTO
 {
     public function __construct(
-        public readonly string  $sessionToken,
+        public readonly string $sessionToken,
         public readonly ?string $visitorName = null,
         public readonly ?string $visitorEmail = null,
         public readonly ?string $subject = null,
-        public readonly ?array  $metadata = null,
+        public readonly ?array $metadata = null,
     ) {}
 
     public static function fromRequest(array $data): self

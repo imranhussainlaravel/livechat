@@ -21,7 +21,7 @@ class AgentLoadService
      */
     public function getActiveCount(int $agentId): int
     {
-        $cached = Redis::get(self::LOAD_KEY . $agentId);
+        $cached = Redis::get(self::LOAD_KEY.$agentId);
 
         if ($cached !== null) {
             return (int) $cached;
@@ -29,7 +29,7 @@ class AgentLoadService
 
         // Cache miss — compute from DB and seed Redis
         $count = $this->computeFromDb($agentId);
-        Redis::setex(self::LOAD_KEY . $agentId, 300, $count); // TTL 5 min
+        Redis::setex(self::LOAD_KEY.$agentId, 300, $count); // TTL 5 min
 
         return $count;
     }
@@ -40,7 +40,7 @@ class AgentLoadService
      */
     public function increment(int $agentId): int
     {
-        $key = self::LOAD_KEY . $agentId;
+        $key = self::LOAD_KEY.$agentId;
 
         // Ensure key exists before incrementing
         if (Redis::exists($key) === 0) {
@@ -57,7 +57,7 @@ class AgentLoadService
      */
     public function decrement(int $agentId): int
     {
-        $key = self::LOAD_KEY . $agentId;
+        $key = self::LOAD_KEY.$agentId;
 
         if (Redis::exists($key) === 0) {
             $count = $this->computeFromDb($agentId);
@@ -69,6 +69,7 @@ class AgentLoadService
         // Guard against negative values
         if ($new < 0) {
             Redis::set($key, 0);
+
             return 0;
         }
 
@@ -81,7 +82,7 @@ class AgentLoadService
     public function sync(int $agentId): int
     {
         $count = $this->computeFromDb($agentId);
-        Redis::setex(self::LOAD_KEY . $agentId, 300, $count);
+        Redis::setex(self::LOAD_KEY.$agentId, 300, $count);
 
         return $count;
     }
@@ -107,6 +108,7 @@ class AgentLoadService
     {
         return Cache::remember("agent_max_chats:{$agentId}", 600, function () use ($agentId) {
             $user = User::find($agentId);
+
             return $user?->max_chats ?? self::DEFAULT_MAX_CHATS;
         });
     }
@@ -131,17 +133,17 @@ class AgentLoadService
 
         return $agents->map(function (User $agent) {
             $active = $this->getActiveCount($agent->id);
-            $max    = $agent->max_chats ?? self::DEFAULT_MAX_CHATS;
+            $max = $agent->max_chats ?? self::DEFAULT_MAX_CHATS;
 
             return (object) [
-                'id'        => $agent->id,
-                'name'      => $agent->name,
-                'active'    => $active,
-                'max'       => $max,
+                'id' => $agent->id,
+                'name' => $agent->name,
+                'active' => $active,
+                'max' => $max,
                 'available' => $max - $active,
             ];
         })
-            ->filter(fn($a) => $a->available > 0)
+            ->filter(fn ($a) => $a->available > 0)
             ->sortByDesc('available')
             ->values();
     }

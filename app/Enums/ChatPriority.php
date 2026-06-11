@@ -4,16 +4,16 @@ namespace App\Enums;
 
 enum ChatPriority: string
 {
-    case LOW    = 'low';
+    case LOW = 'low';
     case NORMAL = 'normal';
-    case HIGH   = 'high';
+    case HIGH = 'high';
 
     public function label(): string
     {
         return match ($this) {
-            self::LOW    => 'Low',
+            self::LOW => 'Low',
             self::NORMAL => 'Normal',
-            self::HIGH   => 'High',
+            self::HIGH => 'High',
         };
     }
 }

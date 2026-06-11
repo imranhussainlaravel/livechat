@@ -5,9 +5,9 @@ namespace App\DTOs;
 class TransferChatDTO
 {
     public function __construct(
-        public readonly int     $chatId,
-        public readonly int     $fromAgentId,
-        public readonly int     $toAgentId,
+        public readonly int $chatId,
+        public readonly int $fromAgentId,
+        public readonly int $toAgentId,
         public readonly ?string $reason = null,
     ) {}
 

@@ -2,8 +2,8 @@
 
 namespace App\Repositories;
 
-use App\Models\User;
 use App\Enums\UserRole;
+use App\Models\User;
 use App\Repositories\Contracts\UserRepositoryInterface;
 
 class UserRepository implements UserRepositoryInterface
@@ -34,7 +34,7 @@ class UserRepository implements UserRepositoryInterface
     {
         return User::where('role', UserRole::AGENT)
             ->where('status', 'online')
-            ->withCount(['assignedChats' => fn($q) => $q->whereIn('status', ['assigned', 'active', 'transferred'])])
+            ->withCount(['assignedChats' => fn ($q) => $q->whereIn('status', ['assigned', 'active', 'transferred'])])
             ->having('assigned_chats_count', '<', \DB::raw('max_chats'))
             ->orderBy('assigned_chats_count')
             ->get();

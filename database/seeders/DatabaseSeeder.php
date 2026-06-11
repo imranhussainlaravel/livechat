@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
 use App\Enums\UserRole;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -14,10 +14,10 @@ class DatabaseSeeder extends Seeder
         User::firstOrCreate(
             ['email' => 'admin@livechat.com'],
             [
-                'name'     => 'Super Admin',
+                'name' => 'Super Admin',
                 'password' => 'password',
-                'role'     => UserRole::ADMIN->value,
-                'status'   => 'offline',
+                'role' => UserRole::ADMIN->value,
+                'status' => 'offline',
             ]
         );
 
@@ -25,10 +25,10 @@ class DatabaseSeeder extends Seeder
         User::firstOrCreate(
             ['email' => 'agent@livechat.com'],
             [
-                'name'     => 'Demo Agent',
+                'name' => 'Demo Agent',
                 'password' => 'password',
-                'role'     => UserRole::AGENT->value,
-                'status'   => 'offline',
+                'role' => UserRole::AGENT->value,
+                'status' => 'offline',
             ]
         );
 

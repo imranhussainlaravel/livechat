@@ -2,9 +2,9 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\UserRole;
 use Closure;
 use Illuminate\Http\Request;
-use App\Enums\UserRole;
 use Symfony\Component\HttpFoundation\Response;
 
 class EnsureAdmin

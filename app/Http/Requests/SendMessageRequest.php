@@ -14,8 +14,8 @@ class SendMessageRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'chat_id'  => 'required|integer|exists:chats,id',
-            'message'  => 'required|string|max:5000',
+            'chat_id' => 'required|integer|exists:chats,id',
+            'message' => 'required|string|max:5000',
             'metadata' => 'nullable|array',
         ];
     }
@@ -25,7 +25,7 @@ class SendMessageRequest extends FormRequest
      */
     protected function prepareForValidation()
     {
-        if ($this->route('id') && !$this->has('chat_id')) {
+        if ($this->route('id') && ! $this->has('chat_id')) {
             $this->merge([
                 'chat_id' => $this->route('id'),
             ]);

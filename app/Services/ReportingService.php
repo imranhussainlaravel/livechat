@@ -27,12 +27,12 @@ class ReportingService
         // For dynamic range we cache by days
         return Cache::remember("reporting:metrics:{$days}", self::CACHE_TTL, function () use ($days) {
             return [
-                'daily_conversations'  => $this->getDailyConversations($days),
-                'agent_performance'    => $this->getAgentPerformance($days),
-                'conversion_rate'      => $this->getConversionRate($days),
-                'avg_resolution_mins'  => $this->getChatResolutionTime($days),
-                'avg_response_mins'    => $this->getAverageResponseTime($days),
-                'last_updated'         => now()->toIso8601String(),
+                'daily_conversations' => $this->getDailyConversations($days),
+                'agent_performance' => $this->getAgentPerformance($days),
+                'conversion_rate' => $this->getConversionRate($days),
+                'avg_resolution_mins' => $this->getChatResolutionTime($days),
+                'avg_response_mins' => $this->getAverageResponseTime($days),
+                'last_updated' => now()->toIso8601String(),
             ];
         });
     }
@@ -107,12 +107,12 @@ class ReportingService
             $activeLoad = app(AgentLoadService::class)->getActiveCount($agent->id);
 
             $performance[] = [
-                'agent_id'             => $agent->id,
-                'name'                 => $agent->name,
-                'total_resolved'       => $totalResolved,
-                'avg_resolution_mins'  => floor((float) $avgResolutionTime),
-                'messages_sent'        => $messagesSent,
-                'current_active_load'  => $activeLoad,
+                'agent_id' => $agent->id,
+                'name' => $agent->name,
+                'total_resolved' => $totalResolved,
+                'avg_resolution_mins' => floor((float) $avgResolutionTime),
+                'messages_sent' => $messagesSent,
+                'current_active_load' => $activeLoad,
             ];
         }
 

@@ -15,10 +15,10 @@ class StartChatRequest extends FormRequest
     {
         return [
             'session_token' => 'required|string|max:64',
-            'visitor_name'  => 'nullable|string|max:255',
+            'visitor_name' => 'nullable|string|max:255',
             'visitor_email' => 'nullable|email|max:255',
-            'subject'       => 'nullable|string|max:500',
-            'metadata'      => 'nullable|array',
+            'subject' => 'nullable|string|max:500',
+            'metadata' => 'nullable|array',
         ];
     }
 }

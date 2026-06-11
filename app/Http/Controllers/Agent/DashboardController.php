@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers\Agent;
 
-use App\Http\Controllers\Controller;
 use App\Enums\ChatStatus;
 use App\Enums\MessageSenderType;
+use App\Http\Controllers\Controller;
 use App\Models\Chat;
 use App\Models\ChatMessage;
 use App\Repositories\Contracts\ChatRepositoryInterface;
@@ -28,7 +28,7 @@ class DashboardController extends Controller
         $totalResolved = Chat::where('assigned_agent_id', $agentId)
             ->where('status', ChatStatus::CLOSED->value)
             ->count();
-            
+
         $totalAssigned = Chat::where('assigned_agent_id', $agentId)->count();
 
         $avgResolutionTime = Chat::where('assigned_agent_id', $agentId)
@@ -53,9 +53,9 @@ class DashboardController extends Controller
         // Graph data: Agent's messages sent in the last 7 days
         $graphData = [
             'labels' => [],
-            'values' => []
+            'values' => [],
         ];
-        
+
         for ($i = 6; $i >= 0; $i--) {
             $date = today()->subDays($i);
             $graphData['labels'][] = $date->format('M d');
@@ -67,15 +67,15 @@ class DashboardController extends Controller
 
         return view('agent.dashboard', [
             'metrics' => [
-                'active_chats'        => $activeChats,
-                'total_resolved'      => $totalResolved,
-                'total_assigned'      => $totalAssigned,
+                'active_chats' => $activeChats,
+                'total_resolved' => $totalResolved,
+                'total_assigned' => $totalAssigned,
                 'avg_resolution_mins' => floor((float) $avgResolutionTime),
                 'messages_sent_today' => $messagesSentToday,
-                'pending_queue'       => $pendingChats,
+                'pending_queue' => $pendingChats,
             ],
             'recentChats' => $recentChats,
-            'graphData'   => $graphData,
+            'graphData' => $graphData,
         ]);
     }
 }

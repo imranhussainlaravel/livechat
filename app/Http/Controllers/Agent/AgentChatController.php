@@ -19,7 +19,7 @@ class AgentChatController extends Controller
         $users = User::where('id', '!=', $currentUserId)
             ->withCount(['sentInternalMessages as unread_count' => function ($query) use ($currentUserId) {
                 $query->where('receiver_id', $currentUserId)
-                      ->where('is_read', false);
+                    ->where('is_read', false);
             }])
             ->orderBy('status', 'desc') // Online first
             ->orderBy('name', 'asc')
@@ -41,8 +41,8 @@ class AgentChatController extends Controller
         })->orWhere(function ($q) use ($currentUserId, $id) {
             $q->where('sender_id', $id)->where('receiver_id', $currentUserId);
         })
-        ->orderBy('created_at', 'asc')
-        ->get();
+            ->orderBy('created_at', 'asc')
+            ->get();
 
         // Mark as read
         InternalMessage::where('sender_id', $id)
@@ -63,9 +63,9 @@ class AgentChatController extends Controller
         ]);
 
         $message = InternalMessage::create([
-            'sender_id'   => Auth::id(),
+            'sender_id' => Auth::id(),
             'receiver_id' => $id,
-            'message'     => $request->message,
+            'message' => $request->message,
         ]);
 
         // Broadcast event could go here
@@ -73,7 +73,7 @@ class AgentChatController extends Controller
         if ($request->expectsJson()) {
             return response()->json([
                 'message' => 'Message sent.',
-                'data'    => $message
+                'data' => $message,
             ]);
         }
 

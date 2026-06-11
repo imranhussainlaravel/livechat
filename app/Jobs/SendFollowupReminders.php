@@ -2,16 +2,16 @@
 
 namespace App\Jobs;
 
-use App\Models\Followup;
 use App\Enums\FollowupStatus;
 use App\Mail\FollowupReminderMail;
+use App\Models\Followup;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Mail;
 
 class SendFollowupReminders implements ShouldQueue
 {

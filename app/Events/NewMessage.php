@@ -17,9 +17,7 @@ class NewMessage implements ShouldBroadcastNow
     /**
      * Create a new event instance.
      */
-    public function __construct(public ChatMessage $message)
-    {
-    }
+    public function __construct(public ChatMessage $message) {}
 
     /**
      * Get the channels the event should broadcast on.
@@ -29,13 +27,13 @@ class NewMessage implements ShouldBroadcastNow
     public function broadcastOn(): array
     {
         $channels = [
-            new PrivateChannel('chat.' . $this->message->chat_id),
+            new PrivateChannel('chat.'.$this->message->chat_id),
         ];
 
         // Also broadcast to the assigned agent's personal channel for global push notifications
         $chat = $this->message->chat;
         if ($chat && $chat->assigned_agent_id) {
-            $channels[] = new PrivateChannel('agent.' . $chat->assigned_agent_id);
+            $channels[] = new PrivateChannel('agent.'.$chat->assigned_agent_id);
         }
 
         // Also broadcast to the global admin channel so admins get all notifications
@@ -60,12 +58,12 @@ class NewMessage implements ShouldBroadcastNow
     public function broadcastWith(): array
     {
         return [
-            'id'          => $this->message->id,
-            'chat_id'     => $this->message->chat_id,
-            'message'     => $this->message->message,
+            'id' => $this->message->id,
+            'chat_id' => $this->message->chat_id,
+            'message' => $this->message->message,
             'sender_type' => $this->message->sender_type->value ?? $this->message->sender_type,
-            'sender_id'   => $this->message->sender_id,
-            'created_at'  => $this->message->created_at->toIso8601String(),
+            'sender_id' => $this->message->sender_id,
+            'created_at' => $this->message->created_at->toIso8601String(),
         ];
     }
 }

@@ -40,7 +40,7 @@ class ProcessChatQueue implements ShouldQueue
     public function handle(
         ChatQueueService $queue,
         AgentLoadService $load,
-        ActivityService  $activity,
+        ActivityService $activity,
     ): void {
         // ── Step 1: Purge timed-out chats ───────────────────────────
         $timedOut = $queue->purgeTimedOut();
@@ -55,7 +55,7 @@ class ProcessChatQueue implements ShouldQueue
 
         // ── Step 2: Process queue in FIFO order ─────────────────────
         $maxIterations = $queue->length();
-        $processed     = 0;
+        $processed = 0;
 
         while ($processed < $maxIterations) {
             $chatId = $queue->peek();
@@ -71,6 +71,7 @@ class ProcessChatQueue implements ShouldQueue
                 // Stale entry — remove and continue
                 $queue->dequeue();
                 $processed++;
+
                 continue;
             }
 
@@ -100,7 +101,7 @@ class ProcessChatQueue implements ShouldQueue
                         DB::transaction(function () use ($chat, $agent, $load, $activity) {
                             $chat->update([
                                 'assigned_agent_id' => $agent->id,
-                                'status'            => ChatStatus::ASSIGNED->value,
+                                'status' => ChatStatus::ASSIGNED->value,
                             ]);
 
                             // Increment agent load in Redis
@@ -108,7 +109,7 @@ class ProcessChatQueue implements ShouldQueue
 
                             $activity->log($agent->id, 'chat.auto_assigned', 'Chat', $chat->id, [
                                 'agent_name' => $agent->name,
-                                'source'     => 'queue_processor',
+                                'source' => 'queue_processor',
                             ]);
                         });
 

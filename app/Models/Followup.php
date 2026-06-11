@@ -23,14 +23,14 @@ class Followup extends Model
     protected function casts(): array
     {
         return [
-            'status'           => FollowupStatus::class,
-            'followup_time'    => 'datetime',
+            'status' => FollowupStatus::class,
+            'followup_time' => 'datetime',
             'reminder_sent_at' => 'datetime',
         ];
     }
 
     /* ------------------------------------------------------------------ */
-    /*  Relationships                                                      */
+    /*  Relationships */
     /* ------------------------------------------------------------------ */
 
     public function chat(): BelongsTo
@@ -44,7 +44,7 @@ class Followup extends Model
     }
 
     /* ------------------------------------------------------------------ */
-    /*  Scopes                                                             */
+    /*  Scopes */
     /* ------------------------------------------------------------------ */
 
     public function scopePending($query)

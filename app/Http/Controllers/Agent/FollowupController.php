@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Agent;
 
-use App\Http\Controllers\Controller;
 use App\DTOs\CreateFollowupDTO;
+use App\Http\Controllers\Controller;
 use App\Repositories\Contracts\FollowupRepositoryInterface;
 use App\Services\FollowupService;
 use Illuminate\Http\Request;
@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 class FollowupController extends Controller
 {
     public function __construct(
-        private FollowupService             $service,
+        private FollowupService $service,
         private FollowupRepositoryInterface $followups,
     ) {}
 
@@ -34,9 +34,9 @@ class FollowupController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'chat_id'       => 'required|exists:chats,id',
+            'chat_id' => 'required|exists:chats,id',
             'followup_time' => 'required|date|after:now',
-            'notes'         => 'nullable|string|max:1000',
+            'notes' => 'nullable|string|max:1000',
         ]);
 
         $dto = CreateFollowupDTO::fromRequest($request->all(), $request->user()->id);

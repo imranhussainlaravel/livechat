@@ -2,8 +2,8 @@
 
 namespace App\Repositories;
 
-use App\Models\Chat;
 use App\Enums\ChatStatus;
+use App\Models\Chat;
 use App\Repositories\Contracts\ChatRepositoryInterface;
 
 class ChatRepository implements ChatRepositoryInterface
@@ -21,18 +21,18 @@ class ChatRepository implements ChatRepositoryInterface
     public function getByStatus(?string $status, int $perPage = 15)
     {
         $query = Chat::with(['visitor', 'agent']);
-        
+
         if ($status && $status !== 'all') {
             $query->where('status', $status);
         }
-        
+
         return $query->latest()->paginate($perPage);
     }
 
     public function getByAgent(int $agentId, array $filters = [])
     {
         $query = Chat::where('assigned_agent_id', $agentId)
-            ->with(['visitor', 'messages' => fn($q) => $q->latest()->limit(1)]);
+            ->with(['visitor', 'messages' => fn ($q) => $q->latest()->limit(1)]);
 
         if (isset($filters['status']) && $filters['status'] !== 'all') {
             $query->where('status', $filters['status']);
@@ -65,7 +65,7 @@ class ChatRepository implements ChatRepositoryInterface
     public function getActiveCount(int $agentId): int
     {
         return Chat::where('assigned_agent_id', $agentId)
-            ->whereIn('status', array_map(fn($s) => $s->value, ChatStatus::activeStates()))
+            ->whereIn('status', array_map(fn ($s) => $s->value, ChatStatus::activeStates()))
             ->count();
     }
 }

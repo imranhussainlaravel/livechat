@@ -31,14 +31,14 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'last_seen_at'      => 'datetime',
-            'password'          => 'hashed',
-            'role'              => UserRole::class,
+            'last_seen_at' => 'datetime',
+            'password' => 'hashed',
+            'role' => UserRole::class,
         ];
     }
 
     /* ------------------------------------------------------------------ */
-    /*  Relationships                                                      */
+    /*  Relationships */
     /* ------------------------------------------------------------------ */
 
     public function assignedChats(): HasMany
@@ -72,7 +72,7 @@ class User extends Authenticatable
     }
 
     /* ------------------------------------------------------------------ */
-    /*  Helpers                                                            */
+    /*  Helpers */
     /* ------------------------------------------------------------------ */
 
     public function isAdmin(): bool
@@ -89,7 +89,7 @@ class User extends Authenticatable
     {
         return $this->status === 'online'
             && $this->assignedChats()
-            ->whereIn('status', ['assigned', 'active', 'transferred'])
-            ->count() < $this->max_chats;
+                ->whereIn('status', ['assigned', 'active', 'transferred'])
+                ->count() < $this->max_chats;
     }
 }

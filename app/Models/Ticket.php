@@ -23,14 +23,14 @@ class Ticket extends Model
     protected function casts(): array
     {
         return [
-            'status'         => TicketStatus::class,
+            'status' => TicketStatus::class,
             'quotation_sent' => 'boolean',
-            'amount'         => 'decimal:2',
+            'amount' => 'decimal:2',
         ];
     }
 
     /* ------------------------------------------------------------------ */
-    /*  Relationships                                                      */
+    /*  Relationships */
     /* ------------------------------------------------------------------ */
 
     public function chat(): BelongsTo
@@ -44,7 +44,7 @@ class Ticket extends Model
     }
 
     /* ------------------------------------------------------------------ */
-    /*  Scopes                                                             */
+    /*  Scopes */
     /* ------------------------------------------------------------------ */
 
     public function scopeInterested($query)

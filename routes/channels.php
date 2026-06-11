@@ -1,7 +1,7 @@
 <?php
 
-use Illuminate\Support\Facades\Broadcast;
 use App\Models\Chat;
+use Illuminate\Support\Facades\Broadcast;
 
 /*
 |--------------------------------------------------------------------------
@@ -27,7 +27,7 @@ Broadcast::channel('chat.{chatId}', function ($user, int $chatId) {
 
     // 2. Public Visitors (Verified by Session Token)
     $sessionToken = request()->header('X-Session-Token');
-    
+
     if ($sessionToken && $chat->visitor && $chat->visitor->session_token === $sessionToken) {
         return true;
     }
@@ -47,9 +47,9 @@ Broadcast::channel('chat.{chatId}', function ($user, int $chatId) {
 Broadcast::channel('agents', function ($user) {
     if ($user->isAdmin() || $user->isAgent()) {
         return [
-            'id'     => $user->id,
-            'name'   => $user->name,
-            'role'   => $user->role->value,
+            'id' => $user->id,
+            'name' => $user->name,
+            'role' => $user->role->value,
             'status' => $user->status,
         ];
     }
@@ -75,7 +75,7 @@ Broadcast::channel('chat-room.{chatId}', function ($user, int $chatId) {
 
     if ($user->isAdmin() || $user->isAgent()) {
         return [
-            'id'   => $user->id,
+            'id' => $user->id,
             'name' => $user->name,
             'role' => $user->role->value,
         ];

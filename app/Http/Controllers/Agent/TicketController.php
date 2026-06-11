@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Agent;
 
-use App\Http\Controllers\Controller;
 use App\DTOs\CreateTicketDTO;
+use App\Http\Controllers\Controller;
 use App\Services\TicketService;
 use Illuminate\Http\Request;
 
@@ -20,6 +20,7 @@ class TicketController extends Controller
     public function index(Request $request)
     {
         $tickets = $this->tickets->paginate(15, ['agent_id' => $request->user()->id]);
+
         return view('agent.tickets.index', compact('tickets'));
     }
 
@@ -29,11 +30,11 @@ class TicketController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'chat_id'        => 'required|exists:chats,id',
-            'status'         => 'sometimes|in:interested,not_interested',
+            'chat_id' => 'required|exists:chats,id',
+            'status' => 'sometimes|in:interested,not_interested',
             'quotation_sent' => 'sometimes|boolean',
-            'amount'         => 'nullable|numeric|min:0',
-            'notes'          => 'nullable|string|max:2000',
+            'amount' => 'nullable|numeric|min:0',
+            'notes' => 'nullable|string|max:2000',
         ]);
 
         $dto = CreateTicketDTO::fromRequest($request->all(), $request->user()->id);
@@ -52,10 +53,10 @@ class TicketController extends Controller
     public function update(Request $request, int $id)
     {
         $data = $request->validate([
-            'status'         => 'sometimes|in:pending,interested,not_interested',
+            'status' => 'sometimes|in:pending,interested,not_interested',
             'quotation_sent' => 'sometimes|boolean',
-            'amount'         => 'nullable|numeric|min:0',
-            'notes'          => 'nullable|string|max:2000',
+            'amount' => 'nullable|numeric|min:0',
+            'notes' => 'nullable|string|max:2000',
         ]);
 
         $this->service->update($id, $data, $request->user()->id);

@@ -10,15 +10,15 @@ class MessageResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id'          => $this->id,
-            'chat_id'     => $this->chat_id,
+            'id' => $this->id,
+            'chat_id' => $this->chat_id,
             'sender_type' => $this->sender_type instanceof \BackedEnum
                                  ? $this->sender_type->value
                                  : (string) $this->sender_type,
-            'sender_id'   => $this->sender_id,
-            'message'     => $this->message,
-            'metadata'    => $this->metadata,
-            'created_at'  => $this->created_at?->toIso8601String(),
+            'sender_id' => $this->sender_id,
+            'message' => $this->message,
+            'metadata' => $this->metadata,
+            'created_at' => $this->created_at?->toIso8601String(),
         ];
     }
 }

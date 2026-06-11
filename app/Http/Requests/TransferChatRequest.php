@@ -15,7 +15,7 @@ class TransferChatRequest extends FormRequest
     {
         return [
             'to_agent_id' => 'required|exists:users,id',
-            'reason'      => 'nullable|string|max:500',
+            'reason' => 'nullable|string|max:500',
         ];
     }
 }

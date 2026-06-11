@@ -8,12 +8,11 @@ use Illuminate\Support\Facades\Cache;
 class SettingsService
 {
     private const CACHE_KEY = 'system_settings';
+
     private const CACHE_TTL = 3600; // 1 hour
 
     /**
      * Retrieve all settings, utilizing Redis cache.
-     *
-     * @return SystemSetting
      */
     public function getSettings(): SystemSetting
     {
@@ -34,9 +33,6 @@ class SettingsService
 
     /**
      * Update settings and invalidate the cache.
-     *
-     * @param array $data
-     * @return SystemSetting
      */
     public function updateSettings(array $data): SystemSetting
     {
@@ -51,14 +47,11 @@ class SettingsService
 
     /**
      * Get a specific setting value.
-     *
-     * @param string $key
-     * @param mixed $default
-     * @return mixed
      */
     public function get(string $key, mixed $default = null): mixed
     {
         $settings = $this->getSettings();
+
         return $settings->getAttribute($key) ?? $default;
     }
 }

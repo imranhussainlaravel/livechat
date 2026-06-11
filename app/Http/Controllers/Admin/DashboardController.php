@@ -2,12 +2,11 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Controllers\Controller;
 use App\Enums\ChatStatus;
 use App\Enums\UserRole;
+use App\Http\Controllers\Controller;
 use App\Models\Chat;
 use App\Models\User;
-use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
@@ -17,24 +16,24 @@ class DashboardController extends Controller
     public function index()
     {
         $stats = [
-            'active_chats'  => Chat::whereIn('status', ['assigned', 'active'])->count(),
+            'active_chats' => Chat::whereIn('status', ['assigned', 'active'])->count(),
             'pending_queue' => Chat::where('status', ChatStatus::PENDING)->count(),
             'agents_online' => User::where('role', UserRole::AGENT)->where('status', 'online')->count(),
-            'total_today'   => Chat::whereDate('created_at', today())->count(),
-            'closed_today'  => Chat::where('status', ChatStatus::CLOSED)->whereDate('ended_at', today())->count(),
+            'total_today' => Chat::whereDate('created_at', today())->count(),
+            'closed_today' => Chat::where('status', ChatStatus::CLOSED)->whereDate('ended_at', today())->count(),
             'total_ongoing' => Chat::whereIn('status', ['pending', 'assigned', 'active'])->count(),
         ];
 
         $agents = User::where('role', UserRole::AGENT)
-            ->withCount(['assignedChats' => fn($q) => $q->whereIn('status', ['assigned', 'active'])])
+            ->withCount(['assignedChats' => fn ($q) => $q->whereIn('status', ['assigned', 'active'])])
             ->get();
 
         // Graph data: Chats created in the last 7 days
         $graphData = [
             'labels' => [],
-            'values' => []
+            'values' => [],
         ];
-        
+
         for ($i = 6; $i >= 0; $i--) {
             $date = today()->subDays($i);
             $graphData['labels'][] = $date->format('M d');

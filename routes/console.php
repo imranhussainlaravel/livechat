@@ -1,11 +1,11 @@
 <?php
 
+use App\Jobs\ProcessChatQueue;
+use App\Jobs\RefreshReportingCache;
+use App\Jobs\SendFollowupReminders;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
-use App\Jobs\ProcessChatQueue;
-use App\Jobs\SendFollowupReminders;
-use App\Jobs\RefreshReportingCache;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());

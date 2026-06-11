@@ -13,10 +13,10 @@ use Illuminate\Support\Facades\DB;
 class AgentAssignmentService
 {
     public function __construct(
-        private AgentLoadService        $load,
-        private ChatQueueService        $queue,
+        private AgentLoadService $load,
+        private ChatQueueService $queue,
         private ChatRepositoryInterface $chats,
-        private ActivityService         $activity,
+        private ActivityService $activity,
     ) {}
 
     /**
@@ -39,7 +39,7 @@ class AgentAssignmentService
 
             $this->activity->log(null, 'chat.queued', 'Chat', $chat->id, [
                 'queue_position' => $this->queue->length(),
-                'reason'         => 'No available agents',
+                'reason' => 'No available agents',
             ]);
 
             return false;
@@ -48,7 +48,7 @@ class AgentAssignmentService
         // ── Try assignment with atomic locking ──────────────────────
         foreach ($agents as $agent) {
             $lockKey = "assign_lock:agent:{$agent->id}";
-            $lock    = Cache::lock($lockKey, 5);
+            $lock = Cache::lock($lockKey, 5);
 
             if ($lock->get()) {
                 try {
@@ -60,16 +60,16 @@ class AgentAssignmentService
                     DB::transaction(function () use ($chat, $agent) {
                         $this->chats->update($chat->id, [
                             'assigned_agent_id' => $agent->id,
-                            'status'            => ChatStatus::ASSIGNED->value,
+                            'status' => ChatStatus::ASSIGNED->value,
                         ]);
 
                         $this->load->increment($agent->id);
                     });
 
                     $this->activity->log($agent->id, 'chat.auto_assigned', 'Chat', $chat->id, [
-                        'agent_name'  => $agent->name,
+                        'agent_name' => $agent->name,
                         'active_load' => $agent->active + 1,
-                        'max_chats'   => $agent->max,
+                        'max_chats' => $agent->max,
                     ]);
 
                     event(new ChatAssigned($chat->fresh(['visitor', 'agent']), $chat->fresh()->agent));
@@ -86,7 +86,7 @@ class AgentAssignmentService
 
         $this->activity->log(null, 'chat.queued', 'Chat', $chat->id, [
             'queue_position' => $this->queue->length(),
-            'reason'         => 'All agents at capacity or locked',
+            'reason' => 'All agents at capacity or locked',
         ]);
 
         return false;

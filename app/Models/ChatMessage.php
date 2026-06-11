@@ -23,7 +23,7 @@ class ChatMessage extends Model
     {
         return [
             'sender_type' => MessageSenderType::class,
-            'metadata'    => 'array',
+            'metadata' => 'array',
         ];
     }
 

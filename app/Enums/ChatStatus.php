@@ -6,26 +6,26 @@ use InvalidArgumentException;
 
 enum ChatStatus: string
 {
-    case PENDING     = 'pending';       // waiting for agent assignment
-    case ASSIGNED    = 'assigned';      // assigned to an agent
-    case ACTIVE      = 'active';        // agent and user actively chatting
-    case CLOSED      = 'closed';        // chat completed
+    case PENDING = 'pending';       // waiting for agent assignment
+    case ASSIGNED = 'assigned';      // assigned to an agent
+    case ACTIVE = 'active';        // agent and user actively chatting
+    case CLOSED = 'closed';        // chat completed
     case TRANSFERRED = 'transferred';   // moved to another agent
 
     public function label(): string
     {
         return match ($this) {
-            self::PENDING     => 'Pending',
-            self::ASSIGNED    => 'Assigned',
-            self::ACTIVE      => 'Active',
-            self::CLOSED      => 'Closed',
+            self::PENDING => 'Pending',
+            self::ASSIGNED => 'Assigned',
+            self::ACTIVE => 'Active',
+            self::CLOSED => 'Closed',
             self::TRANSFERRED => 'Transferred',
         };
     }
 
     /* ------------------------------------------------------------------ */
-    /*  Status Flow: pending → assigned → active → closed                 */
-    /*  Additional: assigned/active → transferred → assigned              */
+    /*  Status Flow: pending → assigned → active → closed */
+    /*  Additional: assigned/active → transferred → assigned */
     /* ------------------------------------------------------------------ */
 
     /**
@@ -34,11 +34,11 @@ enum ChatStatus: string
     public function allowedTransitions(): array
     {
         return match ($this) {
-            self::PENDING     => [self::ASSIGNED, self::CLOSED],
-            self::ASSIGNED    => [self::ACTIVE, self::TRANSFERRED, self::CLOSED],
-            self::ACTIVE      => [self::TRANSFERRED, self::CLOSED],
+            self::PENDING => [self::ASSIGNED, self::CLOSED],
+            self::ASSIGNED => [self::ACTIVE, self::TRANSFERRED, self::CLOSED],
+            self::ACTIVE => [self::TRANSFERRED, self::CLOSED],
             self::TRANSFERRED => [self::ASSIGNED, self::CLOSED],
-            self::CLOSED      => [], // terminal
+            self::CLOSED => [], // terminal
         };
     }
 

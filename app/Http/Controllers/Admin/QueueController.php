@@ -2,11 +2,10 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Controllers\Controller;
-use App\Models\Chat;
 use App\Enums\ChatStatus;
 use App\Enums\QueueStatus;
-use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
+use App\Models\Chat;
 
 class QueueController extends Controller
 {

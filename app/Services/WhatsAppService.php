@@ -9,7 +9,9 @@ use Illuminate\Support\Facades\Log;
 class WhatsAppService
 {
     private string $phone;
+
     private string $apiKey;
+
     private bool $configured;
 
     public function __construct()
@@ -21,7 +23,7 @@ class WhatsAppService
 
     public function notifyNewChat(Chat $chat): void
     {
-        if (!$this->configured) {
+        if (! $this->configured) {
             return;
         }
 
@@ -30,7 +32,7 @@ class WhatsAppService
         $email = $visitor?->email ?? 'N/A';
         $subject = $chat->subject ?? 'General Inquiry';
         $time = now()->format('M d, Y h:i A');
-        $chatUrl = rtrim(config('app.url'), '/') . '/admin/chats/' . $chat->id;
+        $chatUrl = rtrim(config('app.url'), '/').'/admin/chats/'.$chat->id;
 
         $body = implode("\n", [
             '*New Chat Started!*',
@@ -47,19 +49,19 @@ class WhatsAppService
 
     public function notifyVisitorMessage(Chat $chat, string $message): void
     {
-        if (!$this->configured) {
+        if (! $this->configured) {
             return;
         }
 
         $visitor = $chat->visitor;
         $name = $visitor?->name ?? 'Visitor';
-        $chatUrl = rtrim(config('app.url'), '/') . '/admin/chats/' . $chat->id;
+        $chatUrl = rtrim(config('app.url'), '/').'/admin/chats/'.$chat->id;
 
         $body = implode("\n", [
             '*New Visitor Message!*',
             '',
             "*Visitor:* {$name}",
-            '*Message:* ' . str($message)->limit(400),
+            '*Message:* '.str($message)->limit(400),
             "*Open:* {$chatUrl}",
         ]);
 
@@ -75,14 +77,14 @@ class WhatsAppService
                 'apikey' => $this->apiKey,
             ]);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::warning('CallMeBot WhatsApp notification failed', [
                     'status' => $response->status(),
                     'response' => $response->body(),
                 ]);
             }
         } catch (\Throwable $e) {
-            Log::error('CallMeBot WhatsApp notification exception: ' . $e->getMessage());
+            Log::error('CallMeBot WhatsApp notification exception: '.$e->getMessage());
         }
     }
 }

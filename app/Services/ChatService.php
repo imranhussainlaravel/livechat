@@ -6,8 +6,8 @@ use App\DTOs\SendMessageDTO;
 use App\DTOs\StartChatDTO;
 use App\DTOs\TransferChatDTO;
 use App\Enums\ChatStatus;
-use App\Enums\QueueStatus;
 use App\Enums\MessageSenderType;
+use App\Enums\QueueStatus;
 use App\Events\ChatAssigned;
 use App\Events\ChatClosed;
 use App\Events\ChatQueueUpdated;
@@ -25,11 +25,11 @@ use InvalidArgumentException;
 class ChatService
 {
     public function __construct(
-        private ChatRepositoryInterface    $chats,
+        private ChatRepositoryInterface $chats,
         private MessageRepositoryInterface $messages,
-        private QueueService               $queue,
-        private ActivityService            $activity,
-        private WhatsAppService            $whatsApp,
+        private QueueService $queue,
+        private ActivityService $activity,
+        private WhatsAppService $whatsApp,
     ) {}
 
     /**
@@ -46,7 +46,7 @@ class ChatService
     public function recoverSession(string $token): ?Chat
     {
         $visitor = Visitor::where('session_token', $token)->first();
-        if (!$visitor) {
+        if (! $visitor) {
             return null;
         }
 
@@ -57,7 +57,7 @@ class ChatService
     }
 
     /* ================================================================== */
-    /*  1. START CHAT                                                      */
+    /*  1. START CHAT */
     /* ================================================================== */
 
     /**
@@ -71,21 +71,21 @@ class ChatService
             $visitor = Visitor::firstOrCreate(
                 ['session_token' => $dto->sessionToken],
                 [
-                    'name'     => $dto->visitorName,
-                    'email'    => $dto->visitorEmail,
+                    'name' => $dto->visitorName,
+                    'email' => $dto->visitorEmail,
                     'metadata' => $dto->metadata,
                 ]
             );
 
             // Create chat in PENDING status, QUEUED queue_status
             $chat = $this->chats->create([
-                'visitor_id'   => $visitor->id,
-                'status'       => ChatStatus::PENDING->value,
+                'visitor_id' => $visitor->id,
+                'status' => ChatStatus::PENDING->value,
                 'queue_status' => QueueStatus::QUEUED->value,
-                'priority'     => 'normal',
-                'subject'      => $dto->subject,
-                'metadata'     => $dto->metadata,
-                'started_at'   => now(),
+                'priority' => 'normal',
+                'subject' => $dto->subject,
+                'metadata' => $dto->metadata,
+                'started_at' => now(),
             ]);
 
             // System welcome message
@@ -105,7 +105,7 @@ class ChatService
     }
 
     /* ================================================================== */
-    /*  2. ASSIGN AGENT                                                    */
+    /*  2. ASSIGN AGENT */
     /* ================================================================== */
 
     /**
@@ -122,8 +122,8 @@ class ChatService
 
             $chat = $this->chats->update($chatId, [
                 'assigned_agent_id' => $agentId,
-                'queue_status'      => QueueStatus::PICKED->value,
-                'status'            => ChatStatus::ACTIVE->value,
+                'queue_status' => QueueStatus::PICKED->value,
+                'status' => ChatStatus::ACTIVE->value,
             ]);
 
             $agent = \App\Models\User::find($agentId);
@@ -147,7 +147,7 @@ class ChatService
     }
 
     /* ================================================================== */
-    /*  3. SEND MESSAGE                                                    */
+    /*  3. SEND MESSAGE */
     /* ================================================================== */
 
     /**
@@ -169,11 +169,11 @@ class ChatService
             }
 
             return $this->messages->create([
-                'chat_id'     => $dto->chatId,
+                'chat_id' => $dto->chatId,
                 'sender_type' => $dto->senderType,
-                'sender_id'   => $dto->senderId,
-                'message'     => $dto->message,
-                'metadata'    => $dto->metadata,
+                'sender_id' => $dto->senderId,
+                'message' => $dto->message,
+                'metadata' => $dto->metadata,
             ]);
         });
 
@@ -190,7 +190,7 @@ class ChatService
     }
 
     /* ================================================================== */
-    /*  4. UPDATE STATUS                                                   */
+    /*  4. UPDATE STATUS */
     /* ================================================================== */
 
     /**
@@ -228,7 +228,7 @@ class ChatService
             $this->systemMessage($chatId, "Status changed to {$newStatus->label()}.");
             $this->activity->log($agentId, 'chat.status_updated', 'Chat', $chatId, [
                 'from' => $oldStatus->value,
-                'to'   => $newStatus->value,
+                'to' => $newStatus->value,
             ]);
 
             $chat = $chat->fresh(['visitor', 'agent']);
@@ -252,7 +252,7 @@ class ChatService
     }
 
     /* ================================================================== */
-    /*  5. CLOSE CHAT                                                      */
+    /*  5. CLOSE CHAT */
     /* ================================================================== */
 
     /**
@@ -264,7 +264,7 @@ class ChatService
     }
 
     /* ================================================================== */
-    /*  6. TRANSFER CHAT                                                   */
+    /*  6. TRANSFER CHAT */
     /* ================================================================== */
 
     /**
@@ -279,8 +279,8 @@ class ChatService
 
             $chat->transfers()->create([
                 'from_agent_id' => $dto->fromAgentId,
-                'to_agent_id'   => $dto->toAgentId,
-                'reason'        => $dto->reason,
+                'to_agent_id' => $dto->toAgentId,
+                'reason' => $dto->reason,
             ]);
 
             $fromAgent = \App\Models\User::find($dto->fromAgentId);
@@ -315,7 +315,7 @@ class ChatService
     }
 
     /* ================================================================== */
-    /*  7. ACCEPT CHAT (Agent picks a pending chat)                        */
+    /*  7. ACCEPT CHAT (Agent picks a pending chat) */
     /* ================================================================== */
 
     /**
@@ -328,7 +328,7 @@ class ChatService
     }
 
     /* ================================================================== */
-    /*  PRIVATE HELPERS                                                    */
+    /*  PRIVATE HELPERS */
     /* ================================================================== */
 
     /**
@@ -339,10 +339,10 @@ class ChatService
     private function systemMessage(int $chatId, string $text): void
     {
         $message = $this->messages->create([
-            'chat_id'     => $chatId,
+            'chat_id' => $chatId,
             'sender_type' => MessageSenderType::SYSTEM->value,
-            'sender_id'   => null,
-            'message'     => $text,
+            'sender_id' => null,
+            'message' => $text,
         ]);
 
         $message->load('chat');
@@ -362,7 +362,7 @@ class ChatService
 
         $this->activity->log($agentId, 'chat.status_auto', 'Chat', $chat->id, [
             'from' => $oldStatus->value,
-            'to'   => $newStatus->value,
+            'to' => $newStatus->value,
         ]);
     }
 }

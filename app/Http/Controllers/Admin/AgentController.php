@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Controllers\Controller;
 use App\Enums\UserRole;
+use App\Http\Controllers\Controller;
 use App\Repositories\Contracts\UserRepositoryInterface;
 use App\Services\ActivityService;
 use Illuminate\Http\Request;
@@ -12,7 +12,7 @@ class AgentController extends Controller
 {
     public function __construct(
         private UserRepositoryInterface $users,
-        private ActivityService         $activity,
+        private ActivityService $activity,
     ) {}
 
     /**
@@ -31,17 +31,17 @@ class AgentController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name'      => 'required|string|max:255',
-            'email'     => 'required|email|unique:users,email',
-            'password'  => 'required|string|min:8',
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:8',
             'max_chats' => 'sometimes|integer|min:1|max:50',
         ]);
 
         $this->users->create([
-            'name'      => $request->name,
-            'email'     => $request->email,
-            'password'  => $request->password,
-            'role'      => UserRole::AGENT->value,
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => $request->password,
+            'role' => UserRole::AGENT->value,
             'max_chats' => $request->max_chats ?? 5,
         ]);
 

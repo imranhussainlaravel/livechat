@@ -5,8 +5,8 @@ namespace App\DTOs;
 class CreateFollowupDTO
 {
     public function __construct(
-        public readonly int    $chatId,
-        public readonly int    $agentId,
+        public readonly int $chatId,
+        public readonly int $agentId,
         public readonly string $followupTime,
         public readonly ?string $notes = null,
     ) {}

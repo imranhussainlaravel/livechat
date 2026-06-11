@@ -4,9 +4,9 @@ namespace App\Events;
 
 use App\Models\User;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Broadcasting\PrivateChannel;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
@@ -15,15 +15,15 @@ class AgentLeftChat implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public function __construct(
-        public int  $chatId,
+        public int $chatId,
         public User $agent,
     ) {}
 
     public function broadcastOn(): array
     {
         return [
-            new PresenceChannel('chat-room.' . $this->chatId),
-            new PrivateChannel('chat.' . $this->chatId),
+            new PresenceChannel('chat-room.'.$this->chatId),
+            new PrivateChannel('chat.'.$this->chatId),
         ];
     }
 
@@ -35,8 +35,8 @@ class AgentLeftChat implements ShouldBroadcast
     public function broadcastWith(): array
     {
         return [
-            'chat_id'    => $this->chatId,
-            'agent_id'   => $this->agent->id,
+            'chat_id' => $this->chatId,
+            'agent_id' => $this->agent->id,
             'agent_name' => $this->agent->name,
         ];
     }

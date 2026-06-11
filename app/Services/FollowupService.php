@@ -10,17 +10,17 @@ class FollowupService
 {
     public function __construct(
         private FollowupRepositoryInterface $followups,
-        private ActivityService             $activity,
+        private ActivityService $activity,
     ) {}
 
     public function create(CreateFollowupDTO $dto)
     {
         $followup = $this->followups->create([
-            'chat_id'       => $dto->chatId,
-            'agent_id'      => $dto->agentId,
+            'chat_id' => $dto->chatId,
+            'agent_id' => $dto->agentId,
             'followup_time' => $dto->followupTime,
-            'status'        => FollowupStatus::PENDING->value,
-            'notes'         => $dto->notes,
+            'status' => FollowupStatus::PENDING->value,
+            'notes' => $dto->notes,
         ]);
 
         $this->activity->log($dto->agentId, 'followup.created', 'Followup', $followup->id);

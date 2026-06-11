@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers\Agent;
 
+use App\Events\AgentStatusChanged;
 use App\Http\Controllers\Controller;
 use App\Repositories\Contracts\UserRepositoryInterface;
-use App\Events\AgentStatusChanged;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 

@@ -16,6 +16,7 @@ class TicketController extends Controller
     public function index(Request $request)
     {
         $tickets = $this->tickets->paginate(20, $request->only('status'));
+
         return view('admin.tickets.index', compact('tickets'));
     }
 }

@@ -2,7 +2,6 @@
   "name": "livechat",
   "version": "1.0.0",
   "description": "Nexon Packaging live chat app",
-  "main": "convert_theme.js",
   "directories": {
     "test": "tests"
   },

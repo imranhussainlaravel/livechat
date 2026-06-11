@@ -2,15 +2,13 @@
 
 namespace App\Services;
 
+use App\Enums\ChatStatus;
+use App\Events\AgentLoadUpdated;
+use App\Events\ChatAssigned;
+use App\Models\AgentChatLoad;
 use App\Models\Chat;
 use App\Models\User;
-use App\Models\AgentChatLoad;
-use App\Enums\ChatStatus;
-use App\Events\ChatAssigned;
-use App\Events\ChatQueueUpdated;
-use App\Events\AgentLoadUpdated;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Redis;
 
 class QueueService
 {
@@ -32,7 +30,7 @@ class QueueService
 
     /**
      * Get the best available agent (Online and under max capacity).
-     * Tiebreaker: Returns the agent with the lowest active chat count, 
+     * Tiebreaker: Returns the agent with the lowest active chat count,
      * then the one who was assigned a chat the longest ago.
      */
     public function getAvailableAgent(): ?User
@@ -80,12 +78,14 @@ class QueueService
     }
 
     /**
-     * Release a chat from an agent, decrementing load. 
+     * Release a chat from an agent, decrementing load.
      * Should be called when a chat hits "solved" or "closed".
      */
     public function releaseChatFromAgent(Chat $chat): void
     {
-        if (! $chat->assigned_agent_id) return;
+        if (! $chat->assigned_agent_id) {
+            return;
+        }
 
         DB::transaction(function () use ($chat) {
             $load = AgentChatLoad::where('agent_id', $chat->assigned_agent_id)->lockForUpdate()->first();

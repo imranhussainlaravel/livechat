@@ -5,9 +5,9 @@ namespace App\DTOs;
 class SendMessageDTO
 {
     public function __construct(
-        public readonly int    $chatId,
+        public readonly int $chatId,
         public readonly string $senderType,
-        public readonly ?int   $senderId,
+        public readonly ?int $senderId,
         public readonly string $message,
         public readonly ?array $metadata = null,
     ) {}

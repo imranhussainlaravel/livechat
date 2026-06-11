@@ -5,12 +5,12 @@ namespace App\DTOs;
 class CreateTicketDTO
 {
     public function __construct(
-        public readonly int      $chatId,
-        public readonly int      $agentId,
-        public readonly string   $status = 'interested',
-        public readonly bool     $quotationSent = false,
-        public readonly ?float   $amount = null,
-        public readonly ?string  $notes = null,
+        public readonly int $chatId,
+        public readonly int $agentId,
+        public readonly string $status = 'interested',
+        public readonly bool $quotationSent = false,
+        public readonly ?float $amount = null,
+        public readonly ?string $notes = null,
     ) {}
 
     public static function fromRequest(array $data, int $agentId): self

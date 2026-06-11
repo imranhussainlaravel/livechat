@@ -28,7 +28,7 @@ class FollowupReminderMail extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Follow-up Reminder: ' . ($this->followup->chat->subject ?? 'Chat #' . $this->followup->chat_id),
+            subject: 'Follow-up Reminder: '.($this->followup->chat->subject ?? 'Chat #'.$this->followup->chat_id),
         );
     }
 
