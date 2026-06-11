@@ -182,6 +182,10 @@ class ChatService
         event(new MessageSent($message));
         event(new \App\Events\NewMessage($message));
 
+        if ($dto->senderType === MessageSenderType::VISITOR->value) {
+            $this->whatsApp->notifyVisitorMessage($message->chat, $message->message);
+        }
+
         return $message;
     }
 

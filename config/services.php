@@ -35,10 +35,9 @@ return [
         ],
     ],
 
-    'ultramsg' => [
-        'instance_id' => env('ULTRAMSG_INSTANCE_ID', ''),
-        'token'       => env('ULTRAMSG_TOKEN', ''),
-        'group_id'    => env('ULTRAMSG_GROUP_ID', ''),
+    'callmebot' => [
+        'phone'  => env('CALLMEBOT_PHONE', ''),
+        'apikey' => env('CALLMEBOT_APIKEY', ''),
     ],
 
 ];

@@ -108,6 +108,13 @@
     </div>
 
     <div id="toast-container"></div>
+    <div id="direct-alert-permission" class="hidden fixed bottom-6 left-6 z-[9999] max-w-sm rounded-lg border border-indigo-500/30 bg-slate-900/95 p-4 shadow-2xl shadow-black/40">
+        <p class="text-sm font-semibold text-slate-100">Live chat alerts are off</p>
+        <p class="mt-1 text-xs text-slate-400">Enable browser alerts and sound so new chats notify you directly.</p>
+        <button type="button" id="enable-direct-alerts" class="mt-3 inline-flex items-center rounded-md bg-[#6366F1] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#4F46E5]">
+            Enable alerts
+        </button>
+    </div>
 
     <script>
         // ---- GLOBAL TOAST FEEDBACK ----
@@ -130,6 +137,97 @@
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
         }
+
+        // ---- DIRECT LIVE CHAT ALERTS ----
+        var alertAudioContext = null;
+        var alertSoundUnlocked = false;
+
+        function updateDirectAlertPermissionUI() {
+            var panel = document.getElementById('direct-alert-permission');
+            if (!panel) return;
+
+            var canNotify = !('Notification' in window) || Notification.permission === 'granted';
+            panel.classList.toggle('hidden', canNotify && alertSoundUnlocked);
+        }
+
+        function unlockAlertSound() {
+            if (!('AudioContext' in window) && !('webkitAudioContext' in window)) {
+                alertSoundUnlocked = true;
+                updateDirectAlertPermissionUI();
+                return Promise.resolve();
+            }
+
+            var AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            alertAudioContext = alertAudioContext || new AudioContextClass();
+
+            return alertAudioContext.resume().then(function() {
+                alertSoundUnlocked = true;
+                playAlertSound(true);
+                updateDirectAlertPermissionUI();
+            }).catch(function() {
+                updateDirectAlertPermissionUI();
+            });
+        }
+
+        function playAlertSound(isTest) {
+            if (!alertAudioContext || alertAudioContext.state !== 'running') return;
+
+            var now = alertAudioContext.currentTime;
+            var volume = alertAudioContext.createGain();
+            volume.gain.setValueAtTime(isTest ? 0.04 : 0.09, now);
+            volume.gain.exponentialRampToValueAtTime(0.001, now + 0.75);
+            volume.connect(alertAudioContext.destination);
+
+            [880, 1175].forEach(function(frequency, index) {
+                var oscillator = alertAudioContext.createOscillator();
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(frequency, now + (index * 0.16));
+                oscillator.connect(volume);
+                oscillator.start(now + (index * 0.16));
+                oscillator.stop(now + 0.5 + (index * 0.16));
+            });
+        }
+
+        function requestDirectAlertPermission() {
+            var permissionRequest = Promise.resolve();
+            if ('Notification' in window && Notification.permission === 'default') {
+                permissionRequest = Notification.requestPermission();
+            }
+
+            return permissionRequest.then(function() {
+                return unlockAlertSound();
+            }).then(function() {
+                showToast('Live chat alerts enabled.');
+                updateDirectAlertPermissionUI();
+            });
+        }
+
+        function sendDirectAlert(title, body, url) {
+            playAlertSound(false);
+
+            if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+            var notification = new Notification(title, {
+                body: body || 'Open live chat to respond.',
+                icon: '/favicon.ico',
+                tag: url || 'livechat-alert'
+            });
+
+            notification.onclick = function() {
+                window.focus();
+                if (url) window.location.href = url;
+                notification.close();
+            };
+        }
+
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('#enable-direct-alerts')) {
+                requestDirectAlertPermission();
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', updateDirectAlertPermissionUI);
+        document.addEventListener('turbo:load', updateDirectAlertPermissionUI);
 
         // ---- GLOBAL AJAX FORM HANDLER ----
         document.addEventListener('submit', function(e) {
@@ -391,13 +489,6 @@
             }
         });
 
-        // Push Notification Permission
-        if ("Notification" in window) {
-            if (Notification.permission !== "granted" && Notification.permission !== "denied") {
-                Notification.requestPermission();
-            }
-        }
-
         // Initialize Pusher Globally if Authenticated
         @if(auth()->check() && (auth()->user()->isAgent() || auth()->user()->isAdmin()))
             const loadScript = (src) => new Promise(resolve => {
@@ -469,14 +560,11 @@
                                 updateUnreadUI();
                                 flashChatRow(e.chat_id);
                                 showToast('New message from visitor #' + e.chat_id);
-                                if ("Notification" in window && Notification.permission === "granted") {
-                                    new Notification("New Message from Visitor", {
-                                        body: e.message,
-                                        icon: "/favicon.ico"
-                                    }).onclick = function() {
-                                        window.location.href = '/agent/chats/' + e.chat_id;
-                                    };
-                                }
+                                sendDirectAlert(
+                                    'New live chat message',
+                                    e.message,
+                                    '/agent/chats/' + e.chat_id
+                                );
                             }
                         }
                     })
@@ -491,6 +579,11 @@
                         updateQueueCount(e.pending_count);
                         showToast('New chat from ' + (e.visitor_name || 'Visitor'));
                         injectPendingChatRow(e);
+                        sendDirectAlert(
+                            'New live chat started',
+                            (e.visitor_name || 'Visitor') + ' is waiting in the queue.',
+                            '/agent/queue'
+                        );
                     });
 
                 // agent.queue channel — queue count changed (accept, close, transfer)
