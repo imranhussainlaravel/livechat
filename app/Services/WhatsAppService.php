@@ -8,17 +8,14 @@ use Illuminate\Support\Facades\Log;
 
 class WhatsAppService
 {
-    private string $phone;
-
-    private string $apiKey;
+    private string $topicUrl;
 
     private bool $configured;
 
     public function __construct()
     {
-        $this->phone = config('services.callmebot.phone', '');
-        $this->apiKey = config('services.callmebot.apikey', '');
-        $this->configured = $this->phone && $this->apiKey;
+        $this->topicUrl = config('services.ntfy.topic_url', '');
+        $this->configured = (bool) $this->topicUrl;
     }
 
     public function notifyNewChat(Chat $chat): void
@@ -71,20 +68,19 @@ class WhatsAppService
     private function send(string $body): void
     {
         try {
-            $response = Http::timeout(5)->get('https://api.callmebot.com/whatsapp.php', [
-                'phone' => $this->phone,
-                'text' => $body,
-                'apikey' => $this->apiKey,
-            ]);
+            $response = Http::timeout(5)
+                ->withHeaders(['Title' => 'Website Alert'])
+                ->withBody($body, 'text/plain')
+                ->post($this->topicUrl);
 
             if (! $response->successful()) {
-                Log::warning('CallMeBot WhatsApp notification failed', [
+                Log::warning('ntfy push notification failed', [
                     'status' => $response->status(),
                     'response' => $response->body(),
                 ]);
             }
         } catch (\Throwable $e) {
-            Log::error('CallMeBot WhatsApp notification exception: '.$e->getMessage());
+            Log::error('ntfy push notification exception: '.$e->getMessage());
         }
     }
 }
