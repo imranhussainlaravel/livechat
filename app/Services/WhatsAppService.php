@@ -14,7 +14,7 @@ class WhatsAppService
 
     public function __construct()
     {
-        $this->topicUrl = config('services.ntfy.topic_url', '');
+        $this->topicUrl = config('services.ntfy.topic_url', '') ?: $this->envFileValue('NTFY_TOPIC_URL');
         $this->configured = (bool) $this->topicUrl;
     }
 
@@ -82,5 +82,28 @@ class WhatsAppService
         } catch (\Throwable $e) {
             Log::error('ntfy push notification exception: '.$e->getMessage());
         }
+    }
+
+    private function envFileValue(string $key): string
+    {
+        $path = base_path('.env');
+
+        if (! is_readable($path)) {
+            return '';
+        }
+
+        foreach (file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+            if (str_starts_with(trim($line), '#') || ! str_contains($line, '=')) {
+                continue;
+            }
+
+            [$name, $value] = explode('=', $line, 2);
+
+            if (trim($name) === $key) {
+                return trim($value, " \t\n\r\0\x0B\"'");
+            }
+        }
+
+        return '';
     }
 }
