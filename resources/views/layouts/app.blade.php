@@ -93,6 +93,9 @@
         <div class="absolute bottom-[-10%] left-[-10%] w-[60%] h-[60%] bg-indigo-500/5 blur-[150px] rounded-full"></div>
     </div>
 
+    <!-- Mobile sidebar backdrop -->
+    <div id="sidebar-backdrop" class="fixed inset-0 bg-black/60 z-30 hidden lg:hidden"></div>
+
     <!-- Sidebar Component -->
     <x-sidebar />
 
@@ -102,7 +105,7 @@
         <x-header />
 
         <!-- Main Content -->
-        <main class="flex-1 overflow-y-auto p-6 w-full">
+        <main class="flex-1 overflow-y-auto p-4 sm:p-6 w-full">
             @yield('content')
         </main>
     </div>
@@ -293,6 +296,14 @@
                 // If response contains a redirect
                 if (res.redirect) {
                     window.location.href = res.redirect;
+                } else if (fetchMethod.toUpperCase() === 'DELETE') {
+                    // Deletions (e.g. removing a stale pending chat) — drop the row instead of a full reload
+                    const row = form.closest('[data-chat-id]');
+                    if (row) {
+                        row.style.transition = 'opacity 0.25s ease';
+                        row.style.opacity = '0';
+                        setTimeout(function() { row.remove(); }, 250);
+                    }
                 }
             })
             .catch(err => {
@@ -463,10 +474,46 @@
             }, 2000);
         }
 
+        // ---- SHARED MOBILE DRAWER REGISTRY ----
+        // Lets independent drawers (main nav sidebar, chat page's visitor-info
+        // panel, ...) close each other so only one is ever open at a time.
+        window._drawers = window._drawers || {};
+        window.registerDrawer = function(name, closeFn) { window._drawers[name] = closeFn; };
+        window.closeOtherDrawers = function(exceptName) {
+            Object.keys(window._drawers).forEach(function(name) {
+                if (name !== exceptName) window._drawers[name]();
+            });
+        };
+
+        // ---- MOBILE SIDEBAR DRAWER ----
+        function closeSidebar() {
+            var sidebar = document.getElementById('app-sidebar');
+            var backdrop = document.getElementById('sidebar-backdrop');
+            if (sidebar) { sidebar.classList.add('-translate-x-full'); sidebar.classList.remove('translate-x-0'); }
+            if (backdrop) backdrop.classList.add('hidden');
+        }
+        function openSidebar() {
+            window.closeOtherDrawers('sidebar');
+            var sidebar = document.getElementById('app-sidebar');
+            var backdrop = document.getElementById('sidebar-backdrop');
+            if (sidebar) { sidebar.classList.remove('-translate-x-full'); sidebar.classList.add('translate-x-0'); }
+            if (backdrop) backdrop.classList.remove('hidden');
+        }
+        window.registerDrawer('sidebar', closeSidebar);
+        window.toggleSidebar = function() {
+            var sidebar = document.getElementById('app-sidebar');
+            if (!sidebar) return;
+            if (sidebar.classList.contains('-translate-x-full')) openSidebar(); else closeSidebar();
+        };
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('#sidebar-backdrop') || e.target.closest('#sidebar-close-btn')) closeSidebar();
+        });
+
         // ---- TURBO HOOKS ----
         // Re-initialize Alpine after each Turbo navigation
         document.addEventListener('turbo:load', function() {
             updateUnreadUI();
+            closeSidebar(); // always start collapsed on mobile after navigating
             if (window.Alpine) window.Alpine.initTree(document.body);
         });
 

@@ -8,8 +8,8 @@
         ->where('is_read', false)
         ->count();
 @endphp
-<div class="w-64 flex-shrink-0 bg-slate-900/40 border-r border-slate-700/50 backdrop-blur-xl text-slate-300 flex flex-col shadow-2xl z-20">
-    <div class="h-14 flex items-center px-5 border-b border-slate-700/50">
+<div id="app-sidebar" class="fixed inset-y-0 left-0 -translate-x-full transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 w-72 max-w-[85vw] lg:w-64 lg:max-w-none flex-shrink-0 bg-slate-900 lg:bg-slate-900/40 border-r border-slate-700/50 backdrop-blur-xl text-slate-300 flex flex-col shadow-2xl z-40 lg:z-20">
+    <div class="h-14 flex items-center justify-between px-5 border-b border-slate-700/50">
         <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3">
             <img src="https://images.nexonpackaging.com/logo.webp" alt="Nexon" class="h-8 w-auto object-contain">
             <div class="flex flex-col">
@@ -17,6 +17,11 @@
                 <span class="text-xs font-bold text-slate-100 uppercase tracking-wider leading-none">Live Chat</span>
             </div>
         </a>
+        <button id="sidebar-close-btn" type="button" aria-label="Close menu" class="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/80 transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
     </div>
 
     <nav class="flex-1 overflow-y-auto py-3">

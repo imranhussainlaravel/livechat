@@ -13,7 +13,7 @@
 <div class="bg-gray-900 border border-gray-800 rounded-lg shadow-sm overflow-hidden">
     <div class="divide-y divide-gray-800">
         @forelse($chats as $chat)
-        <div class="flex flex-col sm:flex-row sm:items-center gap-4 px-6 py-5 hover:bg-gray-800 transition relative">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-4 px-6 py-5 hover:bg-gray-800 transition relative" data-chat-id="{{ $chat->id }}">
             <div class="flex-1 min-w-0 flex items-center gap-4">
                 <div class="w-12 h-12 rounded-full bg-blue-900/30 flex items-center justify-center text-lg font-bold text-blue-400 shrink-0">
                     {{ strtoupper(substr($chat->visitor->name ?? 'V', 0, 1)) }}
@@ -46,6 +46,18 @@
             </div>
 
             <div class="flex items-center gap-3 shrink-0">
+                @if($chat->created_at->lt(now()->subHours(24)))
+                <form method="POST" action="{{ route('agent.queue.destroy', $chat->id) }}" data-ajax-form onsubmit="return confirm('Delete this pending chat? This cannot be undone from here.');">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="inline-flex items-center px-4 py-2 border border-red-800 text-sm font-medium rounded-md text-red-400 bg-gray-900 hover:bg-red-900/30 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all transform active:scale-95">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                        Delete Chat
+                    </button>
+                </form>
+                @endif
                 <form method="POST" action="{{ route('agent.queue.join', $chat->id) }}" data-ajax-form>
                     @csrf
                     <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all transform active:scale-95">

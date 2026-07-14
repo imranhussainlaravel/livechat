@@ -27,6 +27,7 @@ class Chat extends Model
         'started_at',
         'ended_at',
         'followup_at',
+        'visitor_last_read_at',
     ];
 
     protected function casts(): array
@@ -39,6 +40,7 @@ class Chat extends Model
             'started_at' => 'datetime',
             'ended_at' => 'datetime',
             'followup_at' => 'datetime',
+            'visitor_last_read_at' => 'datetime',
         ];
     }
 

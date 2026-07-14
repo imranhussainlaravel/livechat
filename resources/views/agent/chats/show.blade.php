@@ -15,26 +15,26 @@
     <div class="flex-1 flex flex-col min-w-0 border-r border-gray-800">
 
         {{-- Chat Header --}}
-        <div class="px-6 py-4 border-b border-gray-800 flex items-center justify-between bg-gray-800">
-            <div class="flex items-center gap-4">
-                <a href="{{ route('agent.chats.index') }}" class="p-2 -ml-2 text-gray-400 hover:text-gray-400 transition-colors" title="Back to Chats">
+        <div class="px-3 sm:px-6 py-3 sm:py-4 border-b border-gray-800 flex items-center justify-between gap-2 bg-gray-800">
+            <div class="flex items-center gap-2 sm:gap-4 min-w-0">
+                <a href="{{ route('agent.chats.index') }}" class="p-2 -ml-2 text-gray-400 hover:text-gray-400 transition-colors shrink-0" title="Back to Chats">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                     </svg>
                 </a>
-                <div id="visitor-header-initial" class="w-10 h-10 rounded-full bg-[#6366F1]/30 flex items-center justify-center text-lg font-bold text-[#6366F1] shrink-0">
+                <div id="visitor-header-initial" class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#6366F1]/30 flex items-center justify-center text-base sm:text-lg font-bold text-[#6366F1] shrink-0">
                     {{ strtoupper(substr($chat->visitor->name ?? 'V', 0, 1)) }}
                 </div>
-                <div>
-                    <h2 id="visitor-header-name" class="text-base font-semibold text-gray-100">{{ $chat->visitor->name ?? 'Visitor' }}</h2>
-                    <p class="text-sm text-gray-500">
+                <div class="min-w-0">
+                    <h2 id="visitor-header-name" class="text-sm sm:text-base font-semibold text-gray-100 truncate">{{ $chat->visitor->name ?? 'Visitor' }}</h2>
+                    <p class="text-xs sm:text-sm text-gray-500 truncate">
                         <span id="visitor-header-email">@if($chat->visitor->email){{ $chat->visitor->email }}<span class="mx-1">&middot;</span>@endif</span>
                         {{ $chat->subject ?? 'General Inquiry' }}
                     </p>
                 </div>
             </div>
 
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 sm:gap-3 shrink-0">
                 @php
                 $statusColors = [
                 'pending' => 'bg-yellow-900/30 text-yellow-300',
@@ -45,7 +45,7 @@
                 ];
                 $statusBg = $statusColors[$chat->status->value] ?? 'bg-gray-800 text-gray-200';
                 @endphp
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $statusBg }}">
+                <span class="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $statusBg }}">
                     {{ ucfirst(str_replace('_', ' ', $chat->status->value)) }}
                 </span>
 
@@ -53,11 +53,18 @@
                 @if(! in_array($chat->status->value, ['closed']))
                 <form method="POST" action="{{ route('agent.chats.close', $chat->id) }}" class="inline" data-ajax-form>
                     @csrf
-                    <button type="submit" class="inline-flex items-center px-3 py-1.5 border border-gray-600 text-xs font-medium rounded-md text-red-600 bg-gray-900 hover:bg-red-50 hover:border-red-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors">
+                    <button type="submit" class="inline-flex items-center px-2 sm:px-3 py-1.5 border border-gray-600 text-xs font-medium rounded-md text-red-600 bg-gray-900 hover:bg-red-50 hover:border-red-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors whitespace-nowrap">
                         Close Chat
                     </button>
                 </form>
                 @endif
+
+                {{-- Visitor info drawer toggle (mobile/tablet only) --}}
+                <button id="visitor-info-toggle" type="button" aria-label="Visitor info" class="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-200 hover:bg-gray-700 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </button>
             </div>
         </div>
 
@@ -88,7 +95,8 @@
                     :isMine="$isAgent"
                     :senderName="$isAgent ? ($msg->sender->name ?? 'User') : ($chat->visitor->name ?? 'Visitor')"
                     :message="$msg->message"
-                    :time="$msg->created_at->format('g:i A')" />
+                    :time="$msg->created_at->format('g:i A')"
+                    :createdAtIso="$msg->created_at->toIso8601String()" />
                 @endif
                 @empty
                 <div class="h-full flex flex-col items-center justify-center text-gray-400">
@@ -146,8 +154,11 @@
         @endif
     </div>
 
+    {{-- Mobile backdrop for visitor info drawer --}}
+    <div id="visitor-info-backdrop" class="fixed inset-0 bg-black/60 z-40 hidden lg:hidden"></div>
+
     {{-- Sidebar: Visitor Info & Actions --}}
-    <div class="w-80 h-full overflow-y-auto bg-gray-900 border-l border-gray-800 shadow-sm">
+    <div id="visitor-info-panel" class="fixed inset-y-0 right-0 translate-x-full transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 w-80 max-w-[85vw] h-full overflow-y-auto bg-gray-900 border-l border-gray-800 shadow-sm z-50 lg:z-auto">
         <x-chat-sidebar :chat="$chat" :agents="$agents" :previousAgentId="$previousAgentId ?? null" :timeline="$timeline ?? []" />
     </div>
 </div>
@@ -161,6 +172,28 @@
         var textarea = document.getElementById('message-input');
         var tokenEl = form ? form.querySelector('input[name="_token"]') : null;
         var csrfToken = tokenEl ? tokenEl.value : '';
+
+        // ---- VISITOR INFO DRAWER (mobile/tablet) ----
+        var infoToggle   = document.getElementById('visitor-info-toggle');
+        var infoPanel    = document.getElementById('visitor-info-panel');
+        var infoBackdrop = document.getElementById('visitor-info-backdrop');
+        function closeVisitorInfo() {
+            if (infoPanel) infoPanel.classList.add('translate-x-full');
+            if (infoBackdrop) infoBackdrop.classList.add('hidden');
+        }
+        function openVisitorInfo() {
+            if (window.closeOtherDrawers) window.closeOtherDrawers('visitor-info');
+            if (infoPanel) infoPanel.classList.remove('translate-x-full');
+            if (infoBackdrop) infoBackdrop.classList.remove('hidden');
+        }
+        if (window.registerDrawer) window.registerDrawer('visitor-info', closeVisitorInfo);
+        if (infoToggle) {
+            infoToggle.addEventListener('click', function() {
+                if (infoPanel && infoPanel.classList.contains('translate-x-full')) openVisitorInfo();
+                else closeVisitorInfo();
+            });
+        }
+        if (infoBackdrop) infoBackdrop.addEventListener('click', closeVisitorInfo);
 
         // ---- CLEAR UNREAD STATUS ----
         var chatId = {{ $chat->id }};
@@ -214,15 +247,43 @@
         function appendAgentMessage(text) {
             var escaped = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
             escaped = escaped.replace(/\n/g, '<br>');
+            var nowIso = new Date().toISOString();
             var time = formatTime(new Date());
-            var html = '<div class="flex items-start mb-3 flex-row-reverse">' +
+            var html = '<div class="flex items-start mb-3 flex-row-reverse" data-agent-msg="1" data-created-at="' + nowIso + '">' +
                 '<div class="flex flex-col items-end max-w-[85%]">' +
                 '<span class="text-[10px] text-gray-400 mb-0.5 px-1">' + time + '</span>' +
                 '<div class="px-3 py-1.5 rounded-2xl shadow-sm text-[13px] leading-relaxed bg-[#6366F1] text-white rounded-tr-sm">' +
-                escaped + '</div></div></div>';
+                escaped + '</div>' +
+                '<span class="seen-label hidden text-[10px] text-gray-500 mt-0.5 px-1">Seen</span>' +
+                '</div></div>';
             container.insertAdjacentHTML('beforeend', html);
             scrollToBottom(true);
         }
+
+        // ---- SEEN INDICATOR ----
+        // Shows "Seen" only under the most recent agent bubble the visitor has read up to.
+        function applySeenUpTo(seenAtIso) {
+            if (!seenAtIso || !container) return;
+            var seenAt = new Date(seenAtIso).getTime();
+            var bubbles = container.querySelectorAll('[data-agent-msg="1"]');
+            var lastSeenBubble = null;
+            bubbles.forEach(function(bubble) {
+                var label = bubble.querySelector('.seen-label');
+                if (!label) return;
+                var createdAt = new Date(bubble.getAttribute('data-created-at')).getTime();
+                if (createdAt && createdAt <= seenAt) {
+                    lastSeenBubble = bubble;
+                }
+                label.classList.add('hidden');
+            });
+            if (lastSeenBubble) {
+                var label = lastSeenBubble.querySelector('.seen-label');
+                if (label) label.classList.remove('hidden');
+            }
+        }
+        @if($chat->visitor_last_read_at)
+        applySeenUpTo(@json($chat->visitor_last_read_at->toIso8601String()));
+        @endif
 
         // ---- APPEND VISITOR MESSAGE BUBBLE ----
         function appendVisitorMessage(text, createdAt) {
@@ -335,6 +396,9 @@
                     } else if (e.sender_type === 'agent' && e.sender_id !== currentUserId) {
                         appendAgentMessage(e.message);
                     }
+                })
+                .listen('.chat.seen', function(e) {
+                    applySeenUpTo(e.seen_at);
                 });
 
             window.Echo.join('chat-room.' + chatId)

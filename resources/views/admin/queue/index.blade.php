@@ -13,7 +13,7 @@
 <div class="bg-gray-900 border border-gray-800 rounded-lg shadow-sm overflow-hidden">
     <div class="divide-y divide-gray-800">
         @forelse($chats as $chat)
-        <div class="flex flex-col sm:flex-row sm:items-center gap-4 px-6 py-5 hover:bg-gray-800 transition relative">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-4 px-6 py-5 hover:bg-gray-800 transition relative" data-chat-id="{{ $chat->id }}">
             <div class="flex-1 min-w-0 flex items-center gap-4">
                 <div class="w-12 h-12 rounded-full bg-[#6366F1]/10 border border-[#6366F1]/20 flex items-center justify-center text-lg font-bold text-[#6366F1] shrink-0">
                     {{ strtoupper(substr($chat->visitor->name ?? 'V', 0, 1)) }}
@@ -40,6 +40,15 @@
             </div>
 
             <div class="flex items-center gap-2 shrink-0">
+                @if($chat->created_at->lt(now()->subHours(24)))
+                <form method="POST" action="{{ route('agent.queue.destroy', $chat->id) }}" data-ajax-form onsubmit="return confirm('Delete this pending chat? This cannot be undone from here.');">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="inline-flex items-center px-4 py-2 border border-red-800 text-sm font-medium rounded-md text-red-400 bg-gray-900 hover:bg-red-900/30 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors">
+                        Delete Chat
+                    </button>
+                </form>
+                @endif
                  <!-- Admin can join directly too if needed -->
                 <form method="POST" action="{{ route('agent.queue.join', $chat->id) }}">
                     @csrf

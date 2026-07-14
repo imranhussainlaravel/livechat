@@ -1,4 +1,14 @@
-<header class="h-11 flex-shrink-0 bg-slate-950/60 border-b border-slate-800/60 flex items-center justify-end px-4 gap-3 backdrop-blur-xl sticky top-0 z-10">
+<header class="h-11 flex-shrink-0 bg-slate-950/60 border-b border-slate-800/60 flex items-center justify-between px-4 gap-3 backdrop-blur-xl sticky top-0 z-10">
+    <div class="flex items-center gap-2 min-w-0">
+        <button id="sidebar-toggle" type="button" onclick="window.toggleSidebar && window.toggleSidebar()" aria-label="Toggle menu" class="lg:hidden p-1.5 -ml-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/80 transition-colors flex-shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+            </svg>
+        </button>
+        <span class="text-sm font-semibold text-slate-200 truncate lg:hidden">@yield('header_title', 'Live Chat')</span>
+    </div>
+
+    <div class="flex items-center gap-3">
     @if(auth()->check())
     {{-- Status Indicator --}}
     @php
@@ -56,4 +66,5 @@
         </div>
     </div>
     @endif
+    </div>
 </header>

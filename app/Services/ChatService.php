@@ -24,6 +24,14 @@ use InvalidArgumentException;
 
 class ChatService
 {
+    /**
+     * A closed conversation is only resumed within this many days of being
+     * closed — older than that, the visitor starts a fresh chat instead of
+     * reopening stale context. Ongoing (non-closed) chats always resume
+     * regardless of age.
+     */
+    private const RESUMABLE_CLOSED_CHAT_DAYS = 7;
+
     public function __construct(
         private ChatRepositoryInterface $chats,
         private MessageRepositoryInterface $messages,
@@ -41,7 +49,9 @@ class ChatService
     }
 
     /**
-     * Find the most recent active chat for a session token.
+     * Find the most recent resumable chat for a session token.
+     * Ongoing chats always resume; a closed chat only resumes if it was
+     * closed within the last RESUMABLE_CLOSED_CHAT_DAYS days.
      */
     public function recoverSession(string $token): ?Chat
     {
@@ -50,10 +60,21 @@ class ChatService
             return null;
         }
 
-        // Return the most recent chat that isn't closed, or just the most recent one
-        return $visitor->chats()
-            ->orderBy('created_at', 'desc')
-            ->first();
+        $chat = $visitor->chats()->orderBy('created_at', 'desc')->first();
+        if (! $chat) {
+            return null;
+        }
+
+        if ($chat->status !== ChatStatus::CLOSED) {
+            return $chat;
+        }
+
+        $closedAt = $chat->ended_at ?? $chat->updated_at;
+        if ($closedAt && $closedAt->gt(now()->subDays(self::RESUMABLE_CLOSED_CHAT_DAYS))) {
+            return $chat;
+        }
+
+        return null;
     }
 
     /* ================================================================== */
@@ -135,12 +156,7 @@ class ChatService
             event(new ChatAssigned($chat, $chat->agent));
 
             // Notify all agents/admins that the pending queue count has dropped
-            event(new ChatQueueUpdated(
-                Chat::where('queue_status', QueueStatus::QUEUED)
-                    ->whereNull('assigned_agent_id')
-                    ->where('status', ChatStatus::PENDING)
-                    ->count()
-            ));
+            event(new ChatQueueUpdated(Chat::queued()->count()));
 
             return $chat;
         });
@@ -325,6 +341,45 @@ class ChatService
     public function acceptChat(int $chatId, int $agentId): Chat
     {
         return $this->assignAgent($chatId, $agentId);
+    }
+
+    /* ================================================================== */
+    /*  8. CAPTURE VISITOR EMAIL (offline / no-agent-reply fallback) */
+    /* ================================================================== */
+
+    /**
+     * Store the email a visitor leaves when no agent has replied yet, and
+     * post a visible system message so the agent picking up the chat sees it.
+     */
+    public function captureVisitorEmail(int $chatId, string $email): Chat
+    {
+        return DB::transaction(function () use ($chatId, $email) {
+            $chat = $this->chats->findById($chatId);
+            $chat->visitor->update(['email' => $email]);
+
+            $this->systemMessage($chatId, "Visitor left a contact email: {$email}");
+
+            return $chat->fresh(['visitor', 'agent']);
+        });
+    }
+
+    /* ================================================================== */
+    /*  9. MARK SEEN (visitor has read the chat) */
+    /* ================================================================== */
+
+    /**
+     * Record that the visitor has read the chat up to now, and notify the
+     * agent's dashboard in real time. One-directional: there is no
+     * equivalent "agent has read this" signal shown to the visitor.
+     */
+    public function markSeenByVisitor(int $chatId): Chat
+    {
+        $seenAt = now();
+        $chat = $this->chats->update($chatId, ['visitor_last_read_at' => $seenAt]);
+
+        event(new \App\Events\MessageSeen($chatId, $seenAt->toIso8601String()));
+
+        return $chat;
     }
 
     /* ================================================================== */

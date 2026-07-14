@@ -69,12 +69,8 @@ class ChatController extends Controller
      */
     public function details(Request $request): JsonResponse
     {
-        $id = $request->input('chat_id');
-        $token = $request->header('X-Session-Token') ?? $request->input('session_token');
-
-        $chat = $this->chatService->getChat($id);
-
-        if (! $chat || ! $chat->visitor || $chat->visitor->session_token !== $token) {
+        $chat = $this->resolveVisitorChat($request, $request->input('chat_id'));
+        if (! $chat) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -92,10 +88,8 @@ class ChatController extends Controller
     public function send(SendMessageRequest $request): JsonResponse
     {
         $id = $request->validated('chat_id');
-        $token = $request->header('X-Session-Token') ?? $request->input('session_token');
-
-        $chat = $this->chatService->getChat($id);
-        if (! $chat || ! $chat->visitor || $chat->visitor->session_token !== $token) {
+        $chat = $this->resolveVisitorChat($request, $id);
+        if (! $chat) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -121,10 +115,7 @@ class ChatController extends Controller
     public function messages(Request $request): JsonResponse
     {
         $id = $request->query('chat_id');
-        $token = $request->header('X-Session-Token') ?? $request->input('session_token');
-
-        $chat = $this->chatService->getChat($id);
-        if (! $chat || ! $chat->visitor || $chat->visitor->session_token !== $token) {
+        if (! $this->resolveVisitorChat($request, $id)) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -141,6 +132,49 @@ class ChatController extends Controller
     }
 
     /**
+     * POST /api/chat/email — Visitor leaves a contact email (e.g. when no
+     * agent has replied yet within the first-response window).
+     */
+    public function email(Request $request): JsonResponse
+    {
+        $request->validate([
+            'chat_id' => 'required|integer',
+            'email' => 'required|email|max:255',
+        ]);
+
+        $id = $request->input('chat_id');
+        if (! $this->resolveVisitorChat($request, $id)) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $chat = $this->chatService->captureVisitorEmail($id, $request->input('email'));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Thanks! We will follow up by email.',
+            'data' => new ChatResource($chat),
+        ]);
+    }
+
+    /**
+     * POST /api/chat/seen — Visitor has read the chat; lets the agent's
+     * dashboard show a "Seen" indicator in real time.
+     */
+    public function seen(Request $request): JsonResponse
+    {
+        $request->validate(['chat_id' => 'required|integer']);
+
+        $id = $request->input('chat_id');
+        if (! $this->resolveVisitorChat($request, $id)) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $this->chatService->markSeenByVisitor($id);
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
      * POST /api/chat/typing — Visitor broadcasts typing indicator.
      */
     public function typing(Request $request): JsonResponse
@@ -152,11 +186,9 @@ class ChatController extends Controller
         ]);
 
         $id = $request->validated('chat_id');
-        $token = $request->header('X-Session-Token') ?? $request->input('session_token');
 
         // Validate the visitor owns this chat
-        $chat = $this->chatService->getChat($id);
-        if (! $chat || ! $chat->visitor || $chat->visitor->session_token !== $token) {
+        if (! $this->resolveVisitorChat($request, $id)) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -169,5 +201,22 @@ class ChatController extends Controller
         ));
 
         return response()->json(['message' => 'OK']);
+    }
+
+    /**
+     * Load a chat and verify the requesting visitor actually owns it via
+     * the X-Session-Token header (or session_token body/query param).
+     * Returns null when the chat doesn't belong to this session.
+     */
+    private function resolveVisitorChat(Request $request, $id): ?\App\Models\Chat
+    {
+        $token = $request->header('X-Session-Token') ?? $request->input('session_token');
+        $chat = $this->chatService->getChat($id);
+
+        if (! $chat || ! $chat->visitor || $chat->visitor->session_token !== $token) {
+            return null;
+        }
+
+        return $chat;
     }
 }

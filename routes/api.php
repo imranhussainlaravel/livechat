@@ -24,6 +24,8 @@ Route::prefix('chat')->middleware('throttle:chat')->group(function () {
     Route::post('/send', [ChatController::class, 'send']);
     Route::get('/messages', [ChatController::class, 'messages']);
     Route::post('/typing', [ChatController::class, 'typing']);
+    Route::post('/email', [ChatController::class, 'email']);
+    Route::post('/seen', [ChatController::class, 'seen']);
 });
 
 /**

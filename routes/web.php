@@ -49,6 +49,8 @@ Route::prefix('agent')
             ->name('queue.index');
         Route::post('/queue/{id}/join', [\App\Http\Controllers\Agent\AgentQueueController::class, 'joinChat'])
             ->name('queue.join');
+        Route::delete('/queue/{id}', [\App\Http\Controllers\Agent\AgentQueueController::class, 'destroy'])
+            ->name('queue.destroy');
 
         // Chats
         Route::get('/chats', [\App\Http\Controllers\Agent\ChatController::class, 'index'])
