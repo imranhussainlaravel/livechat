@@ -24,6 +24,12 @@
                             {{ $chat->visitor->name ?? 'Visitor' }}
                         </p>
                         <span class="text-xs text-gray-500 font-normal">#{{ $chat->id }}</span>
+                        @if($chat->previousChat)
+                        <a href="{{ route('agent.chats.show', $chat->previousChat->id) }}" onclick="event.stopPropagation()"
+                           class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-500/20 text-indigo-300 no-underline hover:bg-indigo-500/30">
+                            Returning visitor · view chat #{{ $chat->previousChat->id }}
+                        </a>
+                        @endif
                     </div>
                     <p class="text-sm text-gray-400 truncate max-w-xl">{{ $chat->subject ?? 'General inquiry' }}</p>
                     <div class="flex items-center gap-3 mt-1.5">

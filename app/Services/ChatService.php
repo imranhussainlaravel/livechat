@@ -24,14 +24,6 @@ use InvalidArgumentException;
 
 class ChatService
 {
-    /**
-     * A closed conversation is only resumed within this many days of being
-     * closed — older than that, the visitor starts a fresh chat instead of
-     * reopening stale context. Ongoing (non-closed) chats always resume
-     * regardless of age.
-     */
-    private const RESUMABLE_CLOSED_CHAT_DAYS = 7;
-
     public function __construct(
         private ChatRepositoryInterface $chats,
         private MessageRepositoryInterface $messages,
@@ -49,9 +41,11 @@ class ChatService
     }
 
     /**
-     * Find the most recent resumable chat for a session token.
-     * Ongoing chats always resume; a closed chat only resumes if it was
-     * closed within the last RESUMABLE_CLOSED_CHAT_DAYS days.
+     * Find the visitor's resumable chat for a session token.
+     * An ongoing (non-closed) chat always resumes. A closed chat never
+     * auto-resumes — once an agent has resolved a conversation, the visitor
+     * starts a fresh one (linked to the closed one via previous_chat_id in
+     * startChat()) instead of silently reopening old, possibly stale context.
      */
     public function recoverSession(string $token): ?Chat
     {
@@ -61,20 +55,11 @@ class ChatService
         }
 
         $chat = $visitor->chats()->orderBy('created_at', 'desc')->first();
-        if (! $chat) {
+        if (! $chat || $chat->status === ChatStatus::CLOSED) {
             return null;
         }
 
-        if ($chat->status !== ChatStatus::CLOSED) {
-            return $chat;
-        }
-
-        $closedAt = $chat->ended_at ?? $chat->updated_at;
-        if ($closedAt && $closedAt->gt(now()->subDays(self::RESUMABLE_CLOSED_CHAT_DAYS))) {
-            return $chat;
-        }
-
-        return null;
+        return $chat;
     }
 
     /* ================================================================== */
@@ -98,9 +83,15 @@ class ChatService
                 ]
             );
 
+            // If the visitor's last chat was closed, link this new one to it
+            // so the agent who picks this up can jump back to prior context.
+            $lastChat = $visitor->chats()->orderBy('created_at', 'desc')->first();
+            $previousChatId = $lastChat && $lastChat->status === ChatStatus::CLOSED ? $lastChat->id : null;
+
             // Create chat in PENDING status, QUEUED queue_status
             $chat = $this->chats->create([
                 'visitor_id' => $visitor->id,
+                'previous_chat_id' => $previousChatId,
                 'status' => ChatStatus::PENDING->value,
                 'queue_status' => QueueStatus::QUEUED->value,
                 'priority' => 'normal',
@@ -109,8 +100,13 @@ class ChatService
                 'started_at' => now(),
             ]);
 
-            // System welcome message
-            $this->systemMessage($chat->id, 'Chat started. Please wait while we connect you to an agent...');
+            // System welcome message — this is visible to the visitor too, so
+            // keep it customer-facing; the previous_chat_id link (surfaced to
+            // agents separately in the dashboard) carries the internal context.
+            $welcomeMessage = $previousChatId
+                ? 'Welcome back! Please wait while we connect you to an agent...'
+                : 'Chat started. Please wait while we connect you to an agent...';
+            $this->systemMessage($chat->id, $welcomeMessage);
 
             $chat = $chat->fresh(['visitor', 'agent']);
 
@@ -194,7 +190,7 @@ class ChatService
         });
 
         // Broadcast after commit so clients can safely re-fetch the message from DB
-        $message->load('chat');
+        $message->load(['chat', 'sender']);
         event(new MessageSent($message));
         event(new \App\Events\NewMessage($message));
 
@@ -357,7 +353,10 @@ class ChatService
             $chat = $this->chats->findById($chatId);
             $chat->visitor->update(['email' => $email]);
 
-            $this->systemMessage($chatId, "Visitor left a contact email: {$email}");
+            // Neutral wording — this system message is visible to the
+            // visitor too (broadcast on the shared chat channel), so it
+            // must read fine from either side, not just "Visitor left...".
+            $this->systemMessage($chatId, "Email received: {$email}");
 
             return $chat->fresh(['visitor', 'agent']);
         });

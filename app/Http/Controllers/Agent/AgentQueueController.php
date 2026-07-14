@@ -23,7 +23,7 @@ class AgentQueueController extends Controller
     {
         $chats = Chat::queued()
             ->orderBy('created_at', 'asc')
-            ->with(['visitor', 'messages' => fn ($q) => $q->latest()->limit(1)])
+            ->with(['visitor', 'previousChat', 'messages' => fn ($q) => $q->latest()->limit(1)])
             ->get();
 
         return view('agent.queue.index', compact('chats'));

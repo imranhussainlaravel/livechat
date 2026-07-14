@@ -54,7 +54,7 @@ class ChatController extends Controller
      */
     public function show(int $id)
     {
-        $chat = $this->chats->findWithRelations($id, ['visitor', 'agent', 'transfers']);
+        $chat = $this->chats->findWithRelations($id, ['visitor', 'agent', 'transfers', 'previousChat']);
         $messages = app(MessageRepositoryInterface::class)->getByChatId($id);
 
         // Get available agents & admins for transfer dropdown

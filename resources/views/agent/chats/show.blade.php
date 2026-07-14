@@ -68,6 +68,17 @@
             </div>
         </div>
 
+        {{-- Linked previous conversation (visitor messaged again after being resolved) --}}
+        @if($chat->previousChat)
+        <a href="{{ route('agent.chats.show', $chat->previousChat->id) }}"
+           class="flex items-center gap-2 px-3 sm:px-6 py-2 bg-indigo-950/40 border-b border-indigo-800/50 text-xs text-indigo-300 hover:bg-indigo-950/60 transition-colors no-underline">
+            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+            </svg>
+            This visitor's previous conversation was resolved — view chat #{{ $chat->previousChat->id }} for history
+        </a>
+        @endif
+
         {{-- Messages Area --}}
         <div class="flex-1 relative overflow-hidden" style="position:relative;">
             <div id="messages-container" class="absolute inset-0 overflow-y-auto p-4 space-y-3 bg-gray-900" style="z-index:1;">

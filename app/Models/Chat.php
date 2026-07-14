@@ -18,6 +18,7 @@ class Chat extends Model
 
     protected $fillable = [
         'visitor_id',
+        'previous_chat_id',
         'assigned_agent_id',
         'status',
         'queue_status',
@@ -51,6 +52,15 @@ class Chat extends Model
     public function visitor(): BelongsTo
     {
         return $this->belongsTo(Visitor::class);
+    }
+
+    /**
+     * The prior (closed) conversation this chat was started from, when a
+     * visitor messages again after their last chat was resolved.
+     */
+    public function previousChat(): BelongsTo
+    {
+        return $this->belongsTo(Chat::class, 'previous_chat_id');
     }
 
     public function agent(): BelongsTo

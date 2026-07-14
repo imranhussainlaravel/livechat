@@ -142,8 +142,13 @@
         }
 
         // ---- DIRECT LIVE CHAT ALERTS ----
-        var alertAudioContext = null;
-        var alertSoundUnlocked = false;
+        // NOTE: Turbo re-executes this whole <script> block on every page
+        // navigation (it doesn't do a real reload), so plain `var` state
+        // here would reset itself on every nav. We cache the live
+        // AudioContext on `window` and persist the "unlocked" flag in
+        // localStorage so "Enable alerts" only ever needs to be clicked once.
+        var alertAudioContext = window._alertAudioContext || null;
+        var alertSoundUnlocked = localStorage.getItem('chat_alerts_unlocked') === '1';
 
         function updateDirectAlertPermissionUI() {
             var panel = document.getElementById('direct-alert-permission');
@@ -156,15 +161,18 @@
         function unlockAlertSound() {
             if (!('AudioContext' in window) && !('webkitAudioContext' in window)) {
                 alertSoundUnlocked = true;
+                localStorage.setItem('chat_alerts_unlocked', '1');
                 updateDirectAlertPermissionUI();
                 return Promise.resolve();
             }
 
             var AudioContextClass = window.AudioContext || window.webkitAudioContext;
             alertAudioContext = alertAudioContext || new AudioContextClass();
+            window._alertAudioContext = alertAudioContext;
 
             return alertAudioContext.resume().then(function() {
                 alertSoundUnlocked = true;
+                localStorage.setItem('chat_alerts_unlocked', '1');
                 playAlertSound(true);
                 updateDirectAlertPermissionUI();
             }).catch(function() {

@@ -57,12 +57,15 @@ class NewMessage implements ShouldBroadcastNow
      */
     public function broadcastWith(): array
     {
+        $senderType = $this->message->sender_type->value ?? $this->message->sender_type;
+
         return [
             'id' => $this->message->id,
             'chat_id' => $this->message->chat_id,
             'message' => $this->message->message,
-            'sender_type' => $this->message->sender_type->value ?? $this->message->sender_type,
+            'sender_type' => $senderType,
             'sender_id' => $this->message->sender_id,
+            'sender_name' => $senderType === 'agent' ? $this->message->sender?->name : null,
             'created_at' => $this->message->created_at->toIso8601String(),
         ];
     }
