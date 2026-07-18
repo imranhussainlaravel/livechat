@@ -86,7 +86,8 @@
                 @php
                 $senderType = $msg->sender_type->value ?? $msg->sender_type;
                 $isAgent = $senderType === 'agent';
-                $isSystem = in_array($senderType, ['system', 'bot']);
+                $isBot = $senderType === 'bot';
+                $isSystem = $senderType === 'system';
                 @endphp
 
                 @if($isSystem)
@@ -102,9 +103,9 @@
                 @else
                 <x-chat-message
                     :isAgent="$isAgent"
-                    :isBot="false"
+                    :isBot="$isBot"
                     :isMine="$isAgent"
-                    :senderName="$isAgent ? ($msg->sender->name ?? 'User') : ($chat->visitor->name ?? 'Visitor')"
+                    :senderName="$isAgent ? ($msg->sender->name ?? 'User') : ($isBot ? \App\Models\Setting::getValue('ai_bot_name', 'Assistant') : ($chat->visitor->name ?? 'Visitor'))"
                     :message="$msg->message"
                     :time="$msg->created_at->format('g:i A')"
                     :createdAtIso="$msg->created_at->toIso8601String()" />
@@ -310,6 +311,21 @@
             scrollToBottom(true);
         }
 
+        // ---- APPEND AI ASSISTANT (BOT) MESSAGE BUBBLE ----
+        function appendBotMessage(text, createdAt, senderName) {
+            var escaped = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+            escaped = escaped.replace(/\n/g, '<br>');
+            var time = createdAt ? formatTime(new Date(createdAt)) : formatTime(new Date());
+            var nameEsc = (senderName || 'Assistant').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+            var html = '<div class="flex items-start mb-3">' +
+                '<div class="flex flex-col items-start max-w-[85%]">' +
+                '<span class="text-[10px] text-gray-400 mb-0.5 px-1"><span class="font-semibold text-purple-400">' + nameEsc + '</span> &middot; ' + time + '</span>' +
+                '<div class="px-3 py-1.5 rounded-2xl shadow-sm text-[13px] leading-relaxed bg-purple-50 text-purple-900 border border-purple-100 rounded-tl-sm">' +
+                escaped + '</div></div></div>';
+            container.insertAdjacentHTML('beforeend', html);
+            scrollToBottom(true);
+        }
+
         // ---- SEND MESSAGE VIA AJAX ----
         function sendMessage() {
             if (!textarea || !form) return;
@@ -402,6 +418,8 @@
                 .listen('.message.new', function(e) {
                     if (e.sender_type === 'visitor') {
                         appendVisitorMessage(e.message, e.created_at);
+                    } else if (e.sender_type === 'bot') {
+                        appendBotMessage(e.message, e.created_at, e.sender_name);
                     } else if (e.sender_type === 'system') {
                         appendSystemMessage(e.message);
                     } else if (e.sender_type === 'agent' && e.sender_id !== currentUserId) {
