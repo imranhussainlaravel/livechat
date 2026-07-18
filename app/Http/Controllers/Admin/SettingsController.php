@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Setting;
 use App\Services\SettingsService;
 use Illuminate\Http\Request;
 
@@ -34,7 +35,52 @@ class SettingsController extends Controller
             ],
         ];
 
-        return view('admin.settings.index', ['settings' => $allSettings]);
+        // AI assistant settings (stored in the key-value Setting store, since
+        // the knowledge base is free-form text, not a fixed system column).
+        $ai = [
+            'enabled' => (bool) Setting::getValue('ai_bot_enabled', false),
+            'knowledge' => (string) Setting::getValue('ai_bot_knowledge', ''),
+            'name' => (string) Setting::getValue('ai_bot_name', 'Assistant'),
+            'avatar_url' => (string) Setting::getValue('ai_bot_avatar_url', ''),
+            'configured' => (string) config('services.groq.key') !== '',
+        ];
+
+        return view('admin.settings.index', ['settings' => $allSettings, 'ai' => $ai]);
+    }
+
+    /**
+     * PUT /admin/settings/ai — Update AI assistant settings.
+     */
+    public function updateAi(Request $request)
+    {
+        $validated = $request->validate([
+            'ai_bot_enabled' => 'nullable|boolean',
+            'ai_bot_knowledge' => 'nullable|string|max:20000',
+            'ai_bot_name' => 'nullable|string|max:60',
+            'ai_bot_avatar_url' => 'nullable|url|max:500',
+        ]);
+
+        Setting::updateOrCreate(
+            ['key' => 'ai_bot_enabled'],
+            ['value' => $request->boolean('ai_bot_enabled') ? '1' : '', 'group' => 'ai']
+        );
+
+        Setting::updateOrCreate(
+            ['key' => 'ai_bot_knowledge'],
+            ['value' => $validated['ai_bot_knowledge'] ?? '', 'group' => 'ai']
+        );
+
+        Setting::updateOrCreate(
+            ['key' => 'ai_bot_name'],
+            ['value' => $validated['ai_bot_name'] ?: 'Assistant', 'group' => 'ai']
+        );
+
+        Setting::updateOrCreate(
+            ['key' => 'ai_bot_avatar_url'],
+            ['value' => $validated['ai_bot_avatar_url'] ?? '', 'group' => 'ai']
+        );
+
+        return back()->with('success', 'AI assistant settings updated successfully.');
     }
 
     /**

@@ -103,9 +103,21 @@ class ChatService
             // System welcome message — this is visible to the visitor too, so
             // keep it customer-facing; the previous_chat_id link (surfaced to
             // agents separately in the dashboard) carries the internal context.
-            $welcomeMessage = $previousChatId
-                ? 'Welcome back! Please wait while we connect you to an agent...'
-                : 'Chat started. Please wait while we connect you to an agent...';
+            // If the AI assistant is on, tell the visitor it will help right
+            // away while a human agent is being connected; otherwise keep the
+            // original "please wait" wording.
+            $botOn = (bool) \App\Models\Setting::getValue('ai_bot_enabled', false)
+                && (string) config('services.groq.key') !== '';
+
+            if ($botOn) {
+                $welcomeMessage = $previousChatId
+                    ? "Welcome back! Our assistant can help you right away. Everything you send is also passed to our team, and a live agent will join shortly for the best help."
+                    : "Hi! Our assistant can help you right away. Everything you send is also passed to our team, and a live agent will join shortly for the best help.";
+            } else {
+                $welcomeMessage = $previousChatId
+                    ? 'Welcome back! Please wait while we connect you to an agent...'
+                    : 'Chat started. Please wait while we connect you to an agent...';
+            }
             $this->systemMessage($chat->id, $welcomeMessage);
 
             $chat = $chat->fresh(['visitor', 'agent']);
@@ -196,6 +208,13 @@ class ChatService
 
         if ($dto->senderType === MessageSenderType::VISITOR->value) {
             $this->whatsApp->notifyVisitorMessage($message->chat, $message->message);
+
+            // While no human agent has joined yet, let the AI assistant give a
+            // quick first-response. The job re-checks status before posting, so
+            // the moment an agent joins (status leaves PENDING) the bot goes quiet.
+            if ($message->chat->status === ChatStatus::PENDING) {
+                \App\Jobs\GenerateBotReply::dispatch($dto->chatId);
+            }
         }
 
         return $message;
@@ -400,6 +419,25 @@ class ChatService
         ]);
 
         $message->load('chat');
+        event(new \App\Events\NewMessage($message));
+    }
+
+    /**
+     * Insert an AI assistant (bot) message and broadcast it exactly like a
+     * real chat message, so both the visitor's widget and the agent dashboard
+     * render it in the timeline. Called by the GenerateBotReply job.
+     */
+    public function postBotMessage(int $chatId, string $text): void
+    {
+        $message = $this->messages->create([
+            'chat_id' => $chatId,
+            'sender_type' => MessageSenderType::BOT->value,
+            'sender_id' => null,
+            'message' => $text,
+        ]);
+
+        $message->load(['chat', 'sender']);
+        event(new MessageSent($message));
         event(new \App\Events\NewMessage($message));
     }
 

@@ -18,7 +18,14 @@ class MessageResource extends JsonResource
             'chat_id' => $this->chat_id,
             'sender_type' => $senderType,
             'sender_id' => $this->sender_id,
-            'sender_name' => $senderType === 'agent' ? $this->sender?->name : null,
+            'sender_name' => match ($senderType) {
+                'agent' => $this->sender?->name,
+                'bot' => \App\Models\Setting::getValue('ai_bot_name', 'Assistant'),
+                default => null,
+            },
+            'avatar_url' => $senderType === 'bot'
+                ? \App\Models\Setting::getValue('ai_bot_avatar_url', null)
+                : null,
             'message' => $this->message,
             'metadata' => $this->metadata,
             'created_at' => $this->created_at?->toIso8601String(),

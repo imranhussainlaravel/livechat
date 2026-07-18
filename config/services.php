@@ -39,4 +39,15 @@ return [
         'topic_url' => env('NTFY_TOPIC_URL', ''),
     ],
 
+    /*
+    | Groq — free, fast hosted LLM (Llama models) used by the AI assistant
+    | that answers simple questions while a chat is still waiting for a
+    | human agent. Get a free key at https://console.groq.com
+    */
+    'groq' => [
+        'key' => env('GROQ_API_KEY', ''),
+        'model' => env('GROQ_MODEL', 'llama-3.1-8b-instant'),
+        'base_url' => env('GROQ_BASE_URL', 'https://api.groq.com/openai/v1'),
+    ],
+
 ];

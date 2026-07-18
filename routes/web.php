@@ -157,6 +157,8 @@ Route::prefix('admin')
             ->name('settings.index');
         Route::put('/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'update'])
             ->name('settings.update');
+        Route::put('/settings/ai', [\App\Http\Controllers\Admin\SettingsController::class, 'updateAi'])
+            ->name('settings.updateAi');
 
         // Reports
         Route::get('/reports', [\App\Http\Controllers\Admin\ReportsController::class, 'index'])
