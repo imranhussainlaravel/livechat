@@ -126,8 +126,9 @@ class AiBotService
           complex, custom, a complaint, or about an order/account, reply briefly that a live agent will
           join shortly to help with that — nothing more.
         - Never invent prices, delivery times, stock, discounts, or policies not written below.
-        - If the message is a greeting, just greet back briefly (e.g. "Hi! How can I help?"). Do not
-          dump company info.
+        - Greet back briefly ONLY when the message is purely a greeting with no question
+          (e.g. "hi", "hello"). If the message contains a question or request, ANSWER it — never
+          reply with just a greeting when they actually asked something.
         - If the message is small talk, off-topic, or rude, stay calm and brief; do not lecture or pitch.
         - Do not claim to be human. If asked, say you are an automated assistant and an agent will join soon.
         - Plain chat text only — no markdown, headings, bullets, or emojis-heavy replies.
@@ -141,7 +142,9 @@ class AiBotService
 
         $knowledgeBlock = $knowledge !== ''
             ? "Company information (your only source of truth):\n{$knowledge}"
-            : "Company information: (none provided yet — only greet, be reassuring, and let them know a human agent will join shortly).";
+            : "Company information: NONE is loaded. You have no company details. For ANY question "
+                ."(shipping, pricing, MOQ, address, products, etc.) reply briefly that a live agent "
+                ."will join shortly to help with that — do not just greet, and do not make up answers.";
 
         return $rules."\n\n".$knowledgeBlock;
     }
@@ -157,11 +160,18 @@ class AiBotService
      */
     private function history(Chat $chat): array
     {
+        // reorder() clears the messages() relation's default orderBy('created_at')
+        // first — otherwise the SQL becomes "ORDER BY created_at ASC, id DESC" and
+        // the newest messages are both mis-limited and end up reversed, making the
+        // model reply to the OLDEST message every time. We want the latest N
+        // messages in chronological (oldest → newest) order.
         $recent = $chat->messages()
+            ->reorder()
             ->orderByDesc('id')
             ->limit(self::HISTORY_LIMIT)
             ->get()
-            ->reverse();
+            ->reverse()
+            ->values();
 
         $mapped = [];
         foreach ($recent as $message) {
