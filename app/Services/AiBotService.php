@@ -51,33 +51,56 @@ class AiBotService
             $this->history($chat),
         );
 
-        try {
-            $response = Http::timeout(20)
-                ->withToken((string) config('services.groq.key'))
-                ->post(rtrim((string) config('services.groq.base_url'), '/').'/chat/completions', [
-                    'model' => config('services.groq.model'),
-                    'messages' => $messages,
-                    'temperature' => 0.2,
-                    'max_tokens' => 160,
-                ]);
+        $url = rtrim((string) config('services.groq.base_url'), '/').'/chat/completions';
+        $primary = (string) config('services.groq.model');
 
-            if (! $response->successful()) {
-                Log::warning('Groq AI reply failed', [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                ]);
+        // Try the configured model, then retry on transient failures (rate
+        // limits / 5xx), then fall back to the fast 8B model if the primary is
+        // rate-limited — so the bot keeps answering instead of going silent.
+        $attempts = [
+            ['model' => $primary, 'wait' => 0],
+            ['model' => $primary, 'wait' => 2],
+            ['model' => 'llama-3.1-8b-instant', 'wait' => 0],
+        ];
 
-                return null;
+        foreach ($attempts as $i => $attempt) {
+            if ($attempt['wait'] > 0) {
+                sleep($attempt['wait']);
             }
 
-            $text = trim((string) data_get($response->json(), 'choices.0.message.content', ''));
+            try {
+                $response = Http::timeout(20)
+                    ->withToken((string) config('services.groq.key'))
+                    ->post($url, [
+                        'model' => $attempt['model'],
+                        'messages' => $messages,
+                        'temperature' => 0.2,
+                        'max_tokens' => 160,
+                    ]);
 
-            return $text !== '' ? $text : null;
-        } catch (\Throwable $e) {
-            Log::error('Groq AI reply exception: '.$e->getMessage());
+                if ($response->successful()) {
+                    $text = trim((string) data_get($response->json(), 'choices.0.message.content', ''));
 
-            return null;
+                    return $text !== '' ? $text : null;
+                }
+
+                Log::warning('Groq AI reply failed', [
+                    'attempt' => $i + 1,
+                    'model' => $attempt['model'],
+                    'status' => $response->status(),
+                    'body' => \Illuminate\Support\Str::limit($response->body(), 500),
+                ]);
+
+                // Only worth retrying on rate-limit (429) or server errors (5xx).
+                if ($response->status() !== 429 && $response->status() < 500) {
+                    return null;
+                }
+            } catch (\Throwable $e) {
+                Log::error('Groq AI reply exception: '.$e->getMessage());
+            }
         }
+
+        return null;
     }
 
     /**

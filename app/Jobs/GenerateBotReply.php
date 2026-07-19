@@ -27,7 +27,7 @@ class GenerateBotReply implements ShouldQueue
     /** Don't pile up retries — a failed AI call just means no bot reply. */
     public int $tries = 1;
 
-    public int $timeout = 30;
+    public int $timeout = 70;
 
     public function __construct(public int $chatId) {}
 
