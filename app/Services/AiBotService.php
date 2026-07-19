@@ -124,9 +124,11 @@ class AiBotService
     }
 
     /**
-     * Map recent chat messages to OpenAI-style roles. Visitor → user,
-     * bot → assistant. Agent/system lines are folded in as context so the
-     * bot doesn't repeat what a system notice already said.
+     * Map recent chat messages to OpenAI-style roles.
+     *   visitor → user, bot/agent → assistant.
+     * System messages (welcome text, "email received", "agent joined", …) are
+     * SKIPPED entirely — feeding them to the model made it parrot the welcome
+     * line back to the visitor.
      *
      * @return array<int, array{role: string, content: string}>
      */
@@ -149,15 +151,19 @@ class AiBotService
                 continue;
             }
 
-            $mapped[] = match ($type) {
-                MessageSenderType::VISITOR->value => ['role' => 'user', 'content' => $text],
-                MessageSenderType::BOT->value => ['role' => 'assistant', 'content' => $text],
-                // agent + system notices given to the model as context
-                default => ['role' => 'system', 'content' => "[note] {$text}"],
+            $role = match ($type) {
+                MessageSenderType::VISITOR->value => 'user',
+                MessageSenderType::BOT->value, MessageSenderType::AGENT->value => 'assistant',
+                default => null, // system → skip
             };
+
+            if ($role === null) {
+                continue;
+            }
+
+            $mapped[] = ['role' => $role, 'content' => $text];
         }
 
-        // The model needs at least one user turn to respond to.
         return $mapped;
     }
 }
