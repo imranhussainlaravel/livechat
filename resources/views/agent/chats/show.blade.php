@@ -81,7 +81,7 @@
 
         {{-- Messages Area --}}
         <div class="flex-1 relative overflow-hidden" style="position:relative;">
-            <div id="messages-container" class="absolute inset-0 overflow-y-auto p-4 space-y-3 bg-gray-900" style="z-index:1;">
+            <div id="messages-container" class="absolute inset-0 overflow-y-auto overflow-x-hidden p-4 space-y-3 bg-gray-900" style="z-index:1;">
                 @forelse($messages as $msg)
                 @php
                 $senderType = $msg->sender_type->value ?? $msg->sender_type;
@@ -264,7 +264,7 @@
             var html = '<div class="flex items-start mb-3 flex-row-reverse" data-agent-msg="1" data-created-at="' + nowIso + '">' +
                 '<div class="flex flex-col items-end max-w-[85%]">' +
                 '<span class="text-[10px] text-gray-400 mb-0.5 px-1">' + time + '</span>' +
-                '<div class="px-3 py-1.5 rounded-2xl shadow-sm text-[13px] leading-relaxed bg-[#6366F1] text-white rounded-tr-sm">' +
+                '<div class="px-3 py-1.5 rounded-2xl shadow-sm text-[13px] leading-relaxed break-words bg-[#6366F1] text-white rounded-tr-sm">' +
                 escaped + '</div>' +
                 '<span class="seen-label hidden text-[10px] text-gray-500 mt-0.5 px-1">Seen</span>' +
                 '</div></div>';
@@ -305,7 +305,7 @@
             var html = '<div class="flex items-start mb-3">' +
                 '<div class="flex flex-col items-start max-w-[85%]">' +
                 '<span class="text-[10px] text-gray-400 mb-0.5 px-1">' + time + '</span>' +
-                '<div class="px-3 py-1.5 rounded-2xl shadow-sm text-[13px] leading-relaxed bg-gray-900 text-gray-200 border border-gray-800 rounded-tl-sm">' +
+                '<div class="px-3 py-1.5 rounded-2xl shadow-sm text-[13px] leading-relaxed break-words bg-gray-900 text-gray-200 border border-gray-800 rounded-tl-sm">' +
                 escaped + '</div></div></div>';
             container.insertAdjacentHTML('beforeend', html);
             scrollToBottom(true);
@@ -320,7 +320,7 @@
             var html = '<div class="flex items-start mb-3">' +
                 '<div class="flex flex-col items-start max-w-[85%]">' +
                 '<span class="text-[10px] text-gray-400 mb-0.5 px-1"><span class="font-semibold text-purple-400">' + nameEsc + '</span> &middot; ' + time + '</span>' +
-                '<div class="px-3 py-1.5 rounded-2xl shadow-sm text-[13px] leading-relaxed bg-purple-50 text-purple-900 border border-purple-100 rounded-tl-sm">' +
+                '<div class="px-3 py-1.5 rounded-2xl shadow-sm text-[13px] leading-relaxed break-words bg-purple-50 text-purple-900 border border-purple-100 rounded-tl-sm">' +
                 escaped + '</div></div></div>';
             container.insertAdjacentHTML('beforeend', html);
             scrollToBottom(true);

@@ -4,7 +4,7 @@
         <span class="text-[10px] text-gray-400 mb-0.5 px-1">
             @if($isBot)<span class="font-semibold text-purple-400">{{ $senderName ?? 'Assistant' }}</span> &middot; @endif{{ $time }}
         </span>
-        <div class="px-3 py-1.5 rounded-2xl shadow-sm text-[13px] leading-relaxed {{
+        <div class="px-3 py-1.5 rounded-2xl shadow-sm text-[13px] leading-relaxed break-words {{
             $isMine ? 'bg-[#6366F1] text-white rounded-tr-sm' :
             ($isBot ? 'bg-purple-50 text-purple-900 border border-purple-100 rounded-tl-sm' : 'bg-gray-800 text-gray-200 rounded-tl-sm')
         }}">
