@@ -210,10 +210,13 @@ class ChatService
             $this->whatsApp->notifyVisitorMessage($message->chat, $message->message);
 
             // While no human agent has joined yet, let the AI assistant give a
-            // quick first-response. The job re-checks status before posting, so
-            // the moment an agent joins (status leaves PENDING) the bot goes quiet.
+            // quick first-response. dispatchAfterResponse() runs the job in the
+            // same PHP process right after the HTTP response is flushed, so it
+            // needs NO queue worker (important on shared hosting). The job
+            // re-checks status before posting, so the moment an agent joins
+            // (status leaves PENDING) the bot goes quiet.
             if ($message->chat->status === ChatStatus::PENDING) {
-                \App\Jobs\GenerateBotReply::dispatch($dto->chatId);
+                \App\Jobs\GenerateBotReply::dispatchAfterResponse($dto->chatId);
             }
         }
 
