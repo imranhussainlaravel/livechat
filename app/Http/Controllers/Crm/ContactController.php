@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Company;
 use App\Models\Contact;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class ContactController extends Controller
 {
@@ -49,7 +50,9 @@ class ContactController extends Controller
             'designation' => 'nullable|string|max:255',
         ]);
 
-        $data['created_by'] = auth()->id();
+        if (Schema::hasColumn('contacts', 'created_by')) {
+            $data['created_by'] = auth()->id();
+        }
 
         $contact = Contact::create($data);
 

@@ -42,13 +42,16 @@ class ChatLeadController extends Controller
         // all owned by the acting agent.
         $company = Company::firstOrCreate(['name' => $validated['company_name']]);
 
-        $contact = Contact::create([
+        $contactData = [
             'company_id'  => $company->id,
             'name'        => $validated['contact_name'],
             'email'       => $validated['email'] ?? null,
             'phone'       => $validated['phone'] ?? null,
-            'created_by'  => $user->id,
-        ]);
+        ];
+        if (\Illuminate\Support\Facades\Schema::hasColumn('contacts', 'created_by')) {
+            $contactData['created_by'] = $user->id;
+        }
+        $contact = Contact::create($contactData);
 
         $lead = Lead::create([
             'contact_id'        => $contact->id,

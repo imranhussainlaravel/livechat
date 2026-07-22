@@ -236,7 +236,7 @@
             });
         }
 
-        function sendDirectAlert(title, body, url) {
+        function sendDirectAlert(title, body, url, tag) {
             playAlertSound(false);
 
             if (!('Notification' in window) || Notification.permission !== 'granted') return;
@@ -244,7 +244,9 @@
             var notification = new Notification(title, {
                 body: body || 'Open live chat to respond.',
                 icon: '/favicon.ico',
-                tag: url || 'livechat-alert'
+                // Unique tag per message → each pops separately (WhatsApp-style);
+                // fall back to per-chat/url grouping when no tag is given.
+                tag: tag || url || 'livechat-alert'
             });
 
             notification.onclick = function() {
@@ -803,7 +805,10 @@
             }
 
             function pollLiveChat() {
-                fetch(LC_URL, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+                var stored = localStorage.getItem(M_KEY);
+                var after = stored !== null ? (parseInt(stored, 10) || 0) : 0;
+
+                fetch(LC_URL + '?after=' + after, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
                     .then(function (r) { return r.ok ? r.json() : null; })
                     .then(function (data) {
                         if (!data) return;
@@ -840,29 +845,33 @@
                             }
                         }
 
-                        // New visitor message in one of my active chats
-                        if (data.latest_message) {
-                            var lastM = parseInt(localStorage.getItem(M_KEY) || '0', 10);
-                            if (!lastM) {
-                                localStorage.setItem(M_KEY, data.latest_message.id);
-                            } else if (data.latest_message.id > lastM) {
-                                localStorage.setItem(M_KEY, data.latest_message.id);
-                                var cid = data.latest_message.chat_id;
-                                var onThatChat = new RegExp('/chats/' + cid + '(?:\\D|$)').test(window.location.pathname);
-                                if (!onThatChat && !echoLive()) {
-                                    // Reuse the unread-badge system so "My Chats" updates too.
-                                    try {
-                                        window.unreadChats = JSON.parse(localStorage.getItem('unreadChats') || '[]');
-                                        if (window.unreadChats.indexOf(cid) === -1) {
-                                            window.unreadChats.push(cid);
-                                            localStorage.setItem('unreadChats', JSON.stringify(window.unreadChats));
-                                        }
-                                        if (typeof updateUnreadUI === 'function') updateUnreadUI();
-                                    } catch (e) {}
-                                    if (window.showToast) showToast('New message from ' + data.latest_message.visitor_name);
-                                    if (window.sendDirectAlert) sendDirectAlert('New message from ' + data.latest_message.visitor_name, data.latest_message.preview, '/agent/chats/' + cid);
-                                }
-                            }
+                        // Visitor messages in my active chats — ONE alert per message (WhatsApp-style).
+                        if (stored === null) {
+                            // First run in this browser → set a baseline, don't alert for the backlog.
+                            localStorage.setItem(M_KEY, data.latest_msg_id || 0);
+                        } else if (Array.isArray(data.new_messages) && data.new_messages.length) {
+                            var maxId = after;
+                            data.new_messages.forEach(function (m) {
+                                if (m.id > maxId) maxId = m.id;
+                                // Skip the chat you're currently viewing, and skip if
+                                // real-time is delivering (avoid duplicates).
+                                var onThatChat = new RegExp('/chats/' + m.chat_id + '(?:\\D|$)').test(window.location.pathname);
+                                if (onThatChat || echoLive()) return;
+
+                                // Reuse the unread-badge system so "My Chats" updates too.
+                                try {
+                                    window.unreadChats = JSON.parse(localStorage.getItem('unreadChats') || '[]');
+                                    if (window.unreadChats.indexOf(m.chat_id) === -1) {
+                                        window.unreadChats.push(m.chat_id);
+                                        localStorage.setItem('unreadChats', JSON.stringify(window.unreadChats));
+                                    }
+                                    if (typeof updateUnreadUI === 'function') updateUnreadUI();
+                                } catch (e) {}
+
+                                if (window.showToast) showToast(m.visitor_name + ': ' + m.preview);
+                                if (window.sendDirectAlert) sendDirectAlert('New message from ' + m.visitor_name, m.preview, '/agent/chats/' + m.chat_id, 'msg-' + m.id);
+                            });
+                            localStorage.setItem(M_KEY, maxId);
                         }
                     })
                     .catch(function () {});

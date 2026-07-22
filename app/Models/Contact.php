@@ -6,6 +6,7 @@ use App\Models\Concerns\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Schema;
 
 class Contact extends Model
 {
@@ -29,7 +30,10 @@ class Contact extends Model
      */
     public function scopeVisibleTo($query, User $user)
     {
-        if (! $user->isAdmin()) {
+        // The `created_by` column may not exist yet if migrations haven't run on
+        // this environment — guard so the Contacts page degrades (shows all)
+        // instead of 500-ing. Run `php artisan migrate` to enable scoping.
+        if (! $user->isAdmin() && Schema::hasColumn('contacts', 'created_by')) {
             $query->where('created_by', $user->id);
         }
 
