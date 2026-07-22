@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Agent;
 
 use App\Http\Controllers\Controller;
+use App\Models\ChannelRead;
 use App\Models\InternalMessage;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class AgentChatController extends Controller
 {
@@ -61,6 +63,11 @@ class AgentChatController extends Controller
             $messages = InternalMessage::where('channel', 'general')->with('sender')->orderBy('created_at')->get();
         }
 
+        // Opening a channel marks it read up to its newest message.
+        if ($activeType === 'group') {
+            $this->markChannelRead($activeId);
+        }
+
         return view('agent.other-agents.index', [
             'users' => $users,
             'channels' => self::CHANNELS,
@@ -68,6 +75,7 @@ class AgentChatController extends Controller
             'activeId' => $activeId,
             'activeTitle' => $activeTitle,
             'messages' => $messages,
+            'channelUnread' => $this->channelUnreadCounts(),
         ]);
     }
 
@@ -136,6 +144,7 @@ class AgentChatController extends Controller
             $this->markDmRead($request->query('dm'));
         } elseif ($request->filled('channel') && isset(self::CHANNELS[$request->query('channel')])) {
             $query = InternalMessage::where('channel', $request->query('channel'));
+            $this->markChannelRead($request->query('channel'));
         } else {
             return response()->json(['data' => []]);
         }
@@ -143,6 +152,94 @@ class AgentChatController extends Controller
         $messages = $query->where('id', '>', $after)->with('sender')->orderBy('created_at')->get();
 
         return response()->json(['data' => $messages->map(fn ($m) => $this->serialize($m))->values()]);
+    }
+
+    /** Mark a group channel read up to its most recent message for the current user. */
+    private function markChannelRead(string $channel): void
+    {
+        $maxId = (int) InternalMessage::where('channel', $channel)->max('id');
+
+        ChannelRead::updateOrCreate(
+            ['user_id' => Auth::id(), 'channel' => $channel],
+            ['last_read_message_id' => $maxId],
+        );
+    }
+
+    /** Unread message count per group channel for the current user (excludes own messages). */
+    private function channelUnreadCounts(): array
+    {
+        $meId = Auth::id();
+        $reads = ChannelRead::where('user_id', $meId)->pluck('last_read_message_id', 'channel');
+
+        $counts = [];
+        foreach (array_keys(self::CHANNELS) as $key) {
+            $counts[$key] = InternalMessage::where('channel', $key)
+                ->where('id', '>', ($reads[$key] ?? 0))
+                ->where('sender_id', '!=', $meId)
+                ->count();
+        }
+
+        return $counts;
+    }
+
+    /**
+     * GET /agent/team/unread-summary — lightweight JSON poll for global
+     * notifications: unread DM count + the newest unread DM. Used by the
+     * layout to toast/notify when a teammate messages you from any page.
+     */
+    public function unreadSummary(Request $request)
+    {
+        $meId = Auth::id();
+
+        // --- Unread direct messages ---
+        $dmBase = InternalMessage::where('receiver_id', $meId)->where('is_read', false);
+        $dmCount = (clone $dmBase)->count();
+        $latestDm = (clone $dmBase)->with('sender')->orderByDesc('id')->first();
+
+        // --- Unread group-channel messages (per-user read marker) ---
+        $reads = ChannelRead::where('user_id', $meId)->pluck('last_read_message_id', 'channel');
+        $channelCount = 0;
+        $latestChannelMsg = null;
+        $latestChannelKey = null;
+
+        foreach (self::CHANNELS as $key => $label) {
+            $unread = InternalMessage::where('channel', $key)
+                ->where('id', '>', ($reads[$key] ?? 0))
+                ->where('sender_id', '!=', $meId);
+
+            $channelCount += (clone $unread)->count();
+
+            $newest = (clone $unread)->with('sender')->orderByDesc('id')->first();
+            if ($newest && (! $latestChannelMsg || $newest->id > $latestChannelMsg->id)) {
+                $latestChannelMsg = $newest;
+                $latestChannelKey = $key;
+            }
+        }
+
+        // --- Pick the single newest unread message for the notification ---
+        $latest = null;
+        $useChannel = $latestChannelMsg && (! $latestDm || $latestChannelMsg->id > $latestDm->id);
+
+        if ($useChannel) {
+            $latest = [
+                'id' => $latestChannelMsg->id,
+                'sender_name' => ($latestChannelMsg->sender?->name ?? 'Teammate').' in #'.self::CHANNELS[$latestChannelKey],
+                'preview' => Str::limit($latestChannelMsg->message, 80),
+                'url' => route('agent.agents.index', ['channel' => $latestChannelKey]),
+            ];
+        } elseif ($latestDm) {
+            $latest = [
+                'id' => $latestDm->id,
+                'sender_name' => $latestDm->sender?->name ?? 'Teammate',
+                'preview' => Str::limit($latestDm->message, 80),
+                'url' => route('agent.agents.index', ['dm' => $latestDm->sender_id]),
+            ];
+        }
+
+        return response()->json([
+            'count' => $dmCount + $channelCount,
+            'latest' => $latest,
+        ]);
     }
 
     /** Messages exchanged one-to-one between the current user and $otherId. */

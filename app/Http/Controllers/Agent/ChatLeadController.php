@@ -47,6 +47,7 @@ class ChatLeadController extends Controller
             'name'        => $validated['contact_name'],
             'email'       => $validated['email'] ?? null,
             'phone'       => $validated['phone'] ?? null,
+            'created_by'  => $user->id,
         ]);
 
         $lead = Lead::create([

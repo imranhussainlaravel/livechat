@@ -11,11 +11,14 @@
             <h3 class="px-1 mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-600">Group Channels</h3>
             <ul class="space-y-1">
                 @foreach($channels as $key => $label)
-                @php $on = $activeType === 'group' && $activeId === $key; @endphp
+                @php $on = $activeType === 'group' && $activeId === $key; $unread = $channelUnread[$key] ?? 0; @endphp
                 <li>
                     <a href="{{ route('agent.agents.index', ['channel' => $key]) }}"
-                       class="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-colors {{ $on ? 'bg-[#6366F1]/10 text-[#6366F1] border border-[#6366F1]/20' : 'text-slate-300 hover:bg-slate-800/60' }}">
-                        <span class="text-slate-500">#</span> {{ $label }}
+                       class="flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-colors {{ $on ? 'bg-[#6366F1]/10 text-[#6366F1] border border-[#6366F1]/20' : 'text-slate-300 hover:bg-slate-800/60' }}">
+                        <span class="flex items-center gap-2 min-w-0"><span class="text-slate-500">#</span> <span class="truncate">{{ $label }}</span></span>
+                        @if($unread > 0)
+                        <span class="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full text-[10px] font-bold bg-[#6366F1] text-white">{{ $unread }}</span>
+                        @endif
                     </a>
                 </li>
                 @endforeach

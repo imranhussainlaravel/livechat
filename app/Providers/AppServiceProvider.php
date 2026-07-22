@@ -38,8 +38,20 @@ class AppServiceProvider extends ServiceProvider
                     $q->where('receiver_id', auth()->id())->where('is_read', false);
                 }])->get();
 
+                // Group-channel unread (per-user read marker) added to the DM total
+                // so the sidebar/header badge reflects channels too.
+                $reads = \App\Models\ChannelRead::where('user_id', auth()->id())
+                    ->pluck('last_read_message_id', 'channel');
+                $channelUnread = 0;
+                foreach (array_keys(\App\Http\Controllers\Agent\AgentChatController::CHANNELS) as $ch) {
+                    $channelUnread += \App\Models\InternalMessage::where('channel', $ch)
+                        ->where('id', '>', ($reads[$ch] ?? 0))
+                        ->where('sender_id', '!=', auth()->id())
+                        ->count();
+                }
+
                 $view->with('unreadAgents', $unreadAgents);
-                $view->with('totalUnreadInternal', $unreadAgents->sum('unread_count'));
+                $view->with('totalUnreadInternal', $unreadAgents->sum('unread_count') + $channelUnread);
             }
         });
     }

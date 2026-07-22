@@ -110,7 +110,7 @@ class LeadController extends Controller
         }
 
         return view('crm.leads.create', [
-            'contacts' => Contact::with('company')->orderBy('name')->get(),
+            'contacts' => Contact::with('company')->visibleTo($user)->orderBy('name')->get(),
             'sources' => LeadSource::cases(),
             'productInterests' => ProductInterest::cases(),
             'agents' => $user->isAdmin()
@@ -187,7 +187,7 @@ class LeadController extends Controller
 
         return view('crm.leads.edit', [
             'lead' => $lead,
-            'contacts' => Contact::with('company')->orderBy('name')->get(),
+            'contacts' => Contact::with('company')->visibleTo($user)->orderBy('name')->get(),
             'sources' => LeadSource::cases(),
             'productInterests' => ProductInterest::cases(),
             'statuses' => LeadStatus::cases(),

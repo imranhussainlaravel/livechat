@@ -9,9 +9,22 @@ use Illuminate\Http\Request;
 
 class ContactController extends Controller
 {
+    /** Agents may only touch their own contacts; admins may touch any. */
+    private function authorizeContact(Contact $contact): void
+    {
+        $user = auth()->user();
+
+        if (! $user->isAdmin() && $contact->created_by !== $user->id) {
+            abort(403);
+        }
+    }
+
     public function index()
     {
-        $contacts = Contact::with('company')->orderBy('name')->paginate(15);
+        $contacts = Contact::with('company')
+            ->visibleTo(auth()->user())
+            ->orderBy('name')
+            ->paginate(15);
 
         return view('crm.contacts.index', compact('contacts'));
     }
@@ -36,6 +49,8 @@ class ContactController extends Controller
             'designation' => 'nullable|string|max:255',
         ]);
 
+        $data['created_by'] = auth()->id();
+
         $contact = Contact::create($data);
 
         // Modal (AJAX) create returns the new record (with a company-qualified label).
@@ -53,6 +68,8 @@ class ContactController extends Controller
 
     public function show(Contact $contact)
     {
+        $this->authorizeContact($contact);
+
         $contact->load(['company', 'leads']);
 
         return view('crm.contacts.show', compact('contact'));
@@ -60,6 +77,8 @@ class ContactController extends Controller
 
     public function edit(Contact $contact)
     {
+        $this->authorizeContact($contact);
+
         $companies = Company::orderBy('name')->get();
 
         return view('crm.contacts.edit', compact('contact', 'companies'));
@@ -67,6 +86,8 @@ class ContactController extends Controller
 
     public function update(Request $request, Contact $contact)
     {
+        $this->authorizeContact($contact);
+
         $data = $request->validate([
             'company_id' => 'required|exists:companies,id',
             'name' => 'required|string|max:255',
@@ -82,6 +103,8 @@ class ContactController extends Controller
 
     public function destroy(Contact $contact)
     {
+        $this->authorizeContact($contact);
+
         $contact->delete();
 
         return redirect()->route('crm.contacts.index')->with('success', 'Contact deleted.');

@@ -31,7 +31,7 @@
         $navActive = 'bg-[#6366F1]/10 text-[#6366F1] border border-[#6366F1]/20';
         $navIdle = 'text-slate-400 hover:text-slate-200';
     @endphp
-    <nav class="flex-1 overflow-y-auto py-3">
+    <nav id="sidebar-nav" class="flex-1 overflow-y-auto py-3">
         <ul class="space-y-0.5">
             {{-- Dashboard (only for users with a chat workspace) --}}
             @if($isAdmin || $canChat)
@@ -153,11 +153,9 @@
                         </svg>
                         <span class="text-sm font-semibold">Team Chat</span>
                     </div>
-                    @if($totalUnreadInternal > 0)
-                    <span class="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-[#6366F1] text-white leading-none shadow-md">
-                        {{ $totalUnreadInternal }}
+                    <span id="team-unread-badge" class="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-[#6366F1] text-white leading-none shadow-md {{ $totalUnreadInternal > 0 ? '' : 'hidden' }}">
+                        {{ $totalUnreadInternal > 0 ? $totalUnreadInternal : '' }}
                     </span>
-                    @endif
                 </a>
             </li>
             @endif

@@ -340,13 +340,26 @@
                 }
                 
                 let errorMsg = 'Something went wrong. Please try again.';
-                if (err.message) errorMsg = err.message;
+                if (err.error) errorMsg = err.error;
+                else if (err.message) errorMsg = err.message;
                 if (err.errors) {
                     const firstError = Object.values(err.errors).flat()[0];
                     if (firstError) errorMsg = firstError;
                 }
-                
+
                 showToast(errorMsg, 'error');
+
+                // A queue "Join" that failed means another agent already took the
+                // chat — drop the row so this agent's queue stays accurate.
+                var failAction = form.getAttribute('action') || '';
+                if (failAction.indexOf('/queue/') !== -1 && failAction.indexOf('/join') !== -1) {
+                    var takenRow = form.closest('[data-chat-id]');
+                    if (takenRow) {
+                        takenRow.style.transition = 'opacity 0.25s ease';
+                        takenRow.style.opacity = '0';
+                        setTimeout(function () { takenRow.remove(); }, 250);
+                    }
+                }
                 console.error('AJAX Error:', err);
             });
         });
@@ -673,6 +686,165 @@
             });
         @endif
     </script>
+
+    {{-- Sidebar scroll persistence across Turbo navigations --}}
+    <script>
+        (function () {
+            var SB_KEY = 'sidebarScrollTop';
+            function saveSidebarScroll() {
+                var nav = document.getElementById('sidebar-nav');
+                if (nav) sessionStorage.setItem(SB_KEY, nav.scrollTop);
+            }
+            function restoreSidebarScroll() {
+                var nav = document.getElementById('sidebar-nav');
+                if (!nav) return;
+                var v = sessionStorage.getItem(SB_KEY);
+                if (v !== null) nav.scrollTop = parseInt(v, 10) || 0;
+            }
+            // scroll doesn't bubble → listen in the capture phase to remember
+            // the menu position continuously as the user scrolls it.
+            document.addEventListener('scroll', function (e) {
+                if (e.target && e.target.id === 'sidebar-nav') {
+                    sessionStorage.setItem(SB_KEY, e.target.scrollTop);
+                }
+            }, true);
+            document.addEventListener('turbo:before-cache', saveSidebarScroll);
+            document.addEventListener('turbo:before-visit', saveSidebarScroll);
+            document.addEventListener('DOMContentLoaded', restoreSidebarScroll);
+            document.addEventListener('turbo:load', restoreSidebarScroll);
+            document.addEventListener('turbo:render', restoreSidebarScroll);
+        })();
+    </script>
+
+    {{-- Global team-message (internal DM) notifications — works on any page --}}
+    @if(auth()->check() && (auth()->user()->canLiveChat() || auth()->user()->isAdmin()))
+    <script>
+        (function () {
+            var TEAM_URL = @json(route('agent.agents.unreadSummary'));
+            var LAST_KEY = 'lastTeamMsgId';
+
+            function setBadge(el, count) {
+                if (!el) return;
+                el.textContent = count > 0 ? count : '';
+                el.classList.toggle('hidden', !(count > 0));
+            }
+
+            function pollTeamMessages() {
+                fetch(TEAM_URL, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+                    .then(function (r) { return r.ok ? r.json() : null; })
+                    .then(function (data) {
+                        if (!data) return;
+                        setBadge(document.getElementById('team-unread-badge'), data.count);
+                        setBadge(document.getElementById('header-unread-badge'), data.count);
+                        if (!data.latest) return;
+
+                        var lastSeen = parseInt(localStorage.getItem(LAST_KEY) || '0', 10);
+                        // First run in this browser → set a baseline silently so we
+                        // don't alert for messages already sitting unread.
+                        if (!lastSeen) { localStorage.setItem(LAST_KEY, data.latest.id); return; }
+
+                        if (data.latest.id > lastSeen) {
+                            localStorage.setItem(LAST_KEY, data.latest.id);
+                            // Don't double-toast while already on the Team Chat page.
+                            if (!/\/other-agents/.test(window.location.pathname)) {
+                                if (window.showToast) showToast('New message from ' + data.latest.sender_name);
+                                if (window.sendDirectAlert) {
+                                    sendDirectAlert('Team message from ' + data.latest.sender_name, data.latest.preview, data.latest.url);
+                                }
+                            }
+                        }
+                    })
+                    .catch(function () {});
+            }
+
+            // Guard so Turbo's per-navigation re-run doesn't stack intervals.
+            if (!window._teamPollStarted) {
+                window._teamPollStarted = true;
+                pollTeamMessages();
+                setInterval(pollTeamMessages, 12000);
+            }
+        })();
+    </script>
+
+    {{-- Live-chat notifications (poll-based) — new pending chats + new messages in my chats --}}
+    <script>
+        (function () {
+            var LC_URL = @json(route('agent.alerts.poll'));
+            var Q_KEY = 'lastQueueChatId';
+            var M_KEY = 'lastMyMsgId';
+
+            function pollLiveChat() {
+                fetch(LC_URL, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+                    .then(function (r) { return r.ok ? r.json() : null; })
+                    .then(function (data) {
+                        if (!data) return;
+
+                        // Keep the sidebar queue badge in sync (reuses the layout helper).
+                        if (typeof updateQueueCount === 'function') updateQueueCount(data.pending_count);
+
+                        // On the Pending Queue page, drop rows for chats another
+                        // agent has already joined (or that were removed/closed).
+                        if (Array.isArray(data.pending_ids) && /\/queue/.test(window.location.pathname)) {
+                            var stillPending = {};
+                            data.pending_ids.forEach(function (id) { stillPending[id] = true; });
+                            document.querySelectorAll('[data-chat-id]').forEach(function (row) {
+                                var rid = parseInt(row.getAttribute('data-chat-id'), 10);
+                                if (rid && !stillPending[rid]) {
+                                    row.style.transition = 'opacity 0.25s ease';
+                                    row.style.opacity = '0';
+                                    setTimeout(function () { row.remove(); }, 250);
+                                }
+                            });
+                        }
+
+                        // New chat waiting in the queue
+                        if (data.latest_pending) {
+                            var lastQ = parseInt(localStorage.getItem(Q_KEY) || '0', 10);
+                            if (!lastQ) {
+                                localStorage.setItem(Q_KEY, data.latest_pending.id);
+                            } else if (data.latest_pending.id > lastQ) {
+                                localStorage.setItem(Q_KEY, data.latest_pending.id);
+                                if (window.showToast) showToast('New chat from ' + data.latest_pending.visitor_name);
+                                if (window.sendDirectAlert) sendDirectAlert('New live chat', data.latest_pending.visitor_name + ' is waiting in the queue.', '/agent/queue');
+                            }
+                        }
+
+                        // New visitor message in one of my active chats
+                        if (data.latest_message) {
+                            var lastM = parseInt(localStorage.getItem(M_KEY) || '0', 10);
+                            if (!lastM) {
+                                localStorage.setItem(M_KEY, data.latest_message.id);
+                            } else if (data.latest_message.id > lastM) {
+                                localStorage.setItem(M_KEY, data.latest_message.id);
+                                var cid = data.latest_message.chat_id;
+                                var onThatChat = new RegExp('/chats/' + cid + '(?:\\D|$)').test(window.location.pathname);
+                                if (!onThatChat) {
+                                    // Reuse the unread-badge system so "My Chats" updates too.
+                                    try {
+                                        window.unreadChats = JSON.parse(localStorage.getItem('unreadChats') || '[]');
+                                        if (window.unreadChats.indexOf(cid) === -1) {
+                                            window.unreadChats.push(cid);
+                                            localStorage.setItem('unreadChats', JSON.stringify(window.unreadChats));
+                                        }
+                                        if (typeof updateUnreadUI === 'function') updateUnreadUI();
+                                    } catch (e) {}
+                                    if (window.showToast) showToast('New message from ' + data.latest_message.visitor_name);
+                                    if (window.sendDirectAlert) sendDirectAlert('New message from ' + data.latest_message.visitor_name, data.latest_message.preview, '/agent/chats/' + cid);
+                                }
+                            }
+                        }
+                    })
+                    .catch(function () {});
+            }
+
+            if (!window._liveChatPollStarted) {
+                window._liveChatPollStarted = true;
+                pollLiveChat();
+                setInterval(pollLiveChat, 10000);
+            }
+        })();
+    </script>
+    @endif
 
     {{-- Flash feedback for standard (non-AJAX) form redirects, e.g. CRM screens. Reuses showToast(). --}}
     @if(session('success') || session('error') || $errors->any())

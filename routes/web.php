@@ -99,6 +99,12 @@ Route::prefix('agent')
         // NOTE: 'messages' and 'channel' declared before '{id}' so they aren't captured as an id.
         Route::get('/other-agents/messages', [\App\Http\Controllers\Agent\AgentChatController::class, 'fetch'])
             ->name('agents.fetch');
+        // Lightweight global unread poll (for cross-page team-message notifications).
+        Route::get('/team/unread-summary', [\App\Http\Controllers\Agent\AgentChatController::class, 'unreadSummary'])
+            ->name('agents.unreadSummary');
+        // Live-chat alert poll (new pending chats + new visitor messages in my chats).
+        Route::get('/alerts/poll', [\App\Http\Controllers\Agent\AlertController::class, 'poll'])
+            ->name('alerts.poll');
         Route::post('/other-agents/channel/{key}/message', [\App\Http\Controllers\Agent\AgentChatController::class, 'storeChannel'])
             ->name('agents.channelMessage');
         Route::get('/other-agents/{id}', [\App\Http\Controllers\Agent\AgentChatController::class, 'show'])
