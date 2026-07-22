@@ -13,7 +13,7 @@
 {{-- New-agent credentials card — shown once, right after creation, so the
      admin can copy the login details + URL and send them to the agent. --}}
 @if(session('new_agent'))
-@php($na = session('new_agent'))
+@php $na = session('new_agent'); @endphp
 <div id="new-agent-card" class="bg-emerald-900/20 border border-emerald-700/40 rounded-lg shadow-sm p-6 mb-8">
     <div class="flex items-start justify-between gap-4 mb-4">
         <div class="flex items-center gap-2">
