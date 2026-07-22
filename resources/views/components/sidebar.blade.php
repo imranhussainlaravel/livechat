@@ -68,7 +68,7 @@
                         <span class="text-sm font-semibold">Pending Queue</span>
                     </div>
                     <span id="sidebar-queue-count" class="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white leading-none transition-transform {{ $pendingQueueCount > 0 ? '' : 'hidden' }}">
-                        {{ $pendingQueueCount }}
+                        {{ $pendingQueueCount > 0 ? $pendingQueueCount : '' }}
                     </span>
                 </a>
             </li>

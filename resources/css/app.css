@@ -118,6 +118,20 @@
 [data-theme="light"] .bg-indigo-500\/20,
 [data-theme="light"] .bg-indigo-500\/30 { background-color: rgba(99, 102, 241, 0.16); }
 
+/* Very-dark (…-950) indigo translucent fills — e.g. the "previous
+   conversation resolved" banner on the chat page — became a muddy navy
+   bar in light mode. Turn them into a readable pale-indigo tint, and
+   give the pale text real contrast. */
+[data-theme="light"] .bg-indigo-950\/40 { background-color: rgba(99, 102, 241, 0.10); }
+[data-theme="light"] .bg-indigo-950\/60,
+[data-theme="light"] .hover\:bg-indigo-950\/60:hover { background-color: rgba(99, 102, 241, 0.18); }
+[data-theme="light"] .border-indigo-800\/50 { border-color: rgba(99, 102, 241, 0.30); }
+
+/* System / status messages (uppercase pills + inline notices) were too
+   faint. Darken their text so they read clearly on light surfaces. */
+[data-theme="light"] .text-gray-400,
+[data-theme="light"] .text-slate-400 { color: #475569; }
+
 /* Keep white text on solid coloured buttons */
 [data-theme="light"] .bg-blue-700.text-white,
 [data-theme="light"] .bg-blue-600.text-white,

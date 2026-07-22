@@ -23,7 +23,7 @@
             });
         } catch (e) {}
     </script>
-    <link rel="stylesheet" href="/css/app.css">
+    <link rel="stylesheet" href="/css/app.css?v={{ @filemtime(public_path('css/app.css')) }}">
     <script src="/js/app.js"></script>
 
     <!-- DOMContentLoaded compat shim: must load FIRST so per-page scripts work after Turbo navigation -->
@@ -360,7 +360,7 @@
 
             // My Chats badge (querySelectorAll handles admin + agent sidebar duplicates)
             document.querySelectorAll('#unread-chat-counter').forEach(function(badge) {
-                badge.textContent = count;
+                badge.textContent = count > 0 ? count : '';
                 if (count > 0) {
                     badge.classList.remove('hidden');
                     badge.style.transition = 'transform 0.3s ease';
@@ -373,7 +373,7 @@
 
             // Monitor badge
             document.querySelectorAll('#monitor-unread-counter').forEach(function(badge) {
-                badge.textContent = count;
+                badge.textContent = count > 0 ? count : '';
                 if (count > 0) {
                     badge.classList.remove('hidden');
                     badge.style.transition = 'transform 0.3s ease';
@@ -398,7 +398,7 @@
         // ---- REAL-TIME QUEUE COUNT ----
         function updateQueueCount(count) {
             document.querySelectorAll('#sidebar-queue-count').forEach(function(badge) {
-                badge.textContent = count;
+                badge.textContent = count > 0 ? count : '';
                 if (count > 0) {
                     badge.classList.remove('hidden');
                     badge.style.transition = 'transform 0.3s ease';
