@@ -154,29 +154,42 @@ class AgentChatController extends Controller
         return response()->json(['data' => $messages->map(fn ($m) => $this->serialize($m))->values()]);
     }
 
-    /** Mark a group channel read up to its most recent message for the current user. */
+    /**
+     * Mark a group channel read up to its most recent message for the current user.
+     * Wrapped so a missing migration (channel_reads / internal_messages.channel)
+     * degrades to a no-op instead of 500-ing the Team Chat page.
+     */
     private function markChannelRead(string $channel): void
     {
-        $maxId = (int) InternalMessage::where('channel', $channel)->max('id');
+        try {
+            $maxId = (int) InternalMessage::where('channel', $channel)->max('id');
 
-        ChannelRead::updateOrCreate(
-            ['user_id' => Auth::id(), 'channel' => $channel],
-            ['last_read_message_id' => $maxId],
-        );
+            ChannelRead::updateOrCreate(
+                ['user_id' => Auth::id(), 'channel' => $channel],
+                ['last_read_message_id' => $maxId],
+            );
+        } catch (\Throwable $e) {
+            // channel_reads table not migrated yet — ignore.
+        }
     }
 
     /** Unread message count per group channel for the current user (excludes own messages). */
     private function channelUnreadCounts(): array
     {
-        $meId = Auth::id();
-        $reads = ChannelRead::where('user_id', $meId)->pluck('last_read_message_id', 'channel');
+        $counts = array_fill_keys(array_keys(self::CHANNELS), 0);
 
-        $counts = [];
-        foreach (array_keys(self::CHANNELS) as $key) {
-            $counts[$key] = InternalMessage::where('channel', $key)
-                ->where('id', '>', ($reads[$key] ?? 0))
-                ->where('sender_id', '!=', $meId)
-                ->count();
+        try {
+            $meId = Auth::id();
+            $reads = ChannelRead::where('user_id', $meId)->pluck('last_read_message_id', 'channel');
+
+            foreach (array_keys(self::CHANNELS) as $key) {
+                $counts[$key] = InternalMessage::where('channel', $key)
+                    ->where('id', '>', ($reads[$key] ?? 0))
+                    ->where('sender_id', '!=', $meId)
+                    ->count();
+            }
+        } catch (\Throwable $e) {
+            // channel_reads not migrated yet — report zero unread.
         }
 
         return $counts;
@@ -197,23 +210,29 @@ class AgentChatController extends Controller
         $latestDm = (clone $dmBase)->with('sender')->orderByDesc('id')->first();
 
         // --- Unread group-channel messages (per-user read marker) ---
-        $reads = ChannelRead::where('user_id', $meId)->pluck('last_read_message_id', 'channel');
+        // Guarded so a pending migration can't 500 this poll endpoint.
         $channelCount = 0;
         $latestChannelMsg = null;
         $latestChannelKey = null;
 
-        foreach (self::CHANNELS as $key => $label) {
-            $unread = InternalMessage::where('channel', $key)
-                ->where('id', '>', ($reads[$key] ?? 0))
-                ->where('sender_id', '!=', $meId);
+        try {
+            $reads = ChannelRead::where('user_id', $meId)->pluck('last_read_message_id', 'channel');
 
-            $channelCount += (clone $unread)->count();
+            foreach (self::CHANNELS as $key => $label) {
+                $unread = InternalMessage::where('channel', $key)
+                    ->where('id', '>', ($reads[$key] ?? 0))
+                    ->where('sender_id', '!=', $meId);
 
-            $newest = (clone $unread)->with('sender')->orderByDesc('id')->first();
-            if ($newest && (! $latestChannelMsg || $newest->id > $latestChannelMsg->id)) {
-                $latestChannelMsg = $newest;
-                $latestChannelKey = $key;
+                $channelCount += (clone $unread)->count();
+
+                $newest = (clone $unread)->with('sender')->orderByDesc('id')->first();
+                if ($newest && (! $latestChannelMsg || $newest->id > $latestChannelMsg->id)) {
+                    $latestChannelMsg = $newest;
+                    $latestChannelKey = $key;
+                }
             }
+        } catch (\Throwable $e) {
+            // channel_reads / channel column not migrated yet — DM-only summary.
         }
 
         // --- Pick the single newest unread message for the notification ---

@@ -582,10 +582,15 @@
 
         // Initialize Pusher Globally if Authenticated
         @if(auth()->check() && (auth()->user()->isAgent() || auth()->user()->isAdmin()))
-            const loadScript = (src) => new Promise(resolve => {
-                if(document.querySelector(`script[src="${src}"]`)) return resolve();
-                const s = document.createElement('script'); s.src = src; s.onload = resolve; document.head.appendChild(s);
-            });
+            // var (not const) so Turbo re-running this inline script on each
+            // navigation doesn't throw "Identifier 'loadScript' already declared".
+            window.loadScript = window.loadScript || function (src) {
+                return new Promise(function (resolve) {
+                    if (document.querySelector('script[src="' + src + '"]')) return resolve();
+                    var s = document.createElement('script'); s.src = src; s.onload = resolve; document.head.appendChild(s);
+                });
+            };
+            var loadScript = window.loadScript;
 
             Promise.all([
                 loadScript('https://unpkg.com/pusher-js@8.3.0/dist/web/pusher.min.js'),
@@ -637,8 +642,14 @@
 
                 console.log('[Echo] Subscribing — user:', currentUserId, 'isAdmin:', isAdmin, 'channel:', channelName);
 
+                // Track whether real-time channels actually subscribe. If
+                // /broadcasting/auth fails, this stays false and the poll-based
+                // fallback keeps firing notifications.
+                window._echoChannelsOk = false;
+
                 // Personal channel — new visitor messages
                 window.Echo.private(channelName)
+                    .subscribed(function() { window._echoChannelsOk = true; console.log('[Echo] Subscribed OK:', channelName); })
                     .listen('.message.new', function(e) {
                         console.log('[Echo] .message.new received:', e);
                         if (e.sender_type === 'visitor') {
@@ -660,7 +671,8 @@
                         }
                     })
                     .error(function(err) {
-                        console.error('[Echo] Channel error on ' + channelName + ':', err);
+                        window._echoChannelsOk = false;
+                        console.error('[Echo] Channel error on ' + channelName + ' (poll fallback active):', err);
                     });
 
                 // agents channel — new chat started (pending queue)
@@ -777,14 +789,16 @@
             var Q_KEY = 'lastQueueChatId';
             var M_KEY = 'lastMyMsgId';
 
-            // When Reverb (Echo) is connected it delivers alerts in real-time,
-            // so the poll should NOT also fire them (avoid double notifications).
-            // It still keeps badges + queue rows in sync as a safety net.
+            // When real-time (Pusher/Echo) is genuinely working, the poll must NOT
+            // also fire alerts (avoid duplicates). "Working" means connected AND a
+            // private channel actually SUBSCRIBED — if /broadcasting/auth fails,
+            // Echo connects but never subscribes, so the poll takes over instead.
             function echoLive() {
                 try {
-                    return !!(window.Echo && window.Echo.connector && window.Echo.connector.pusher
+                    var connected = window.Echo && window.Echo.connector && window.Echo.connector.pusher
                         && window.Echo.connector.pusher.connection
-                        && window.Echo.connector.pusher.connection.state === 'connected');
+                        && window.Echo.connector.pusher.connection.state === 'connected';
+                    return !!(connected && window._echoChannelsOk === true);
                 } catch (e) { return false; }
             }
 
