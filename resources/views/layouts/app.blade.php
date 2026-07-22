@@ -169,8 +169,12 @@
             var panel = document.getElementById('direct-alert-permission');
             if (!panel) return;
 
-            var canNotify = !('Notification' in window) || Notification.permission === 'granted';
-            panel.classList.toggle('hidden', canNotify && alertSoundUnlocked);
+            // Once the user has opted in (sound unlocked) we dismiss the panel
+            // for good. Browser notification permission is best-effort: if it
+            // was denied or dismissed, or we're on a non-secure origin, the
+            // button can't re-request it anyway — sound alerts still work, so
+            // there's nothing left to nag about.
+            panel.classList.toggle('hidden', alertSoundUnlocked);
         }
 
         function unlockAlertSound() {
