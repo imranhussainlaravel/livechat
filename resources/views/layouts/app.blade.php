@@ -245,8 +245,8 @@
                 body: body || 'Open live chat to respond.',
                 icon: '/favicon.ico',
                 // Unique tag per message → each pops separately (WhatsApp-style);
-                // fall back to per-chat/url grouping when no tag is given.
-                tag: tag || url || 'livechat-alert'
+                // fall back to timestamp grouping when no tag is given.
+                tag: tag || ((url || 'livechat-alert') + '-' + Date.now())
             });
 
             notification.onclick = function() {
@@ -649,13 +649,13 @@
                 // fallback keeps firing notifications.
                 window._echoChannelsOk = false;
 
-                // Personal channel — new visitor messages
+                // Personal channel — new visitor messages & system alerts (agent join / transfer)
                 window.Echo.private(channelName)
                     .subscribed(function() { window._echoChannelsOk = true; console.log('[Echo] Subscribed OK:', channelName); })
                     .listen('.message.new', function(e) {
                         console.log('[Echo] .message.new received:', e);
+                        var isCurrentChatPage = window.location.pathname.includes('/chats/' + e.chat_id);
                         if (e.sender_type === 'visitor') {
-                            var isCurrentChatPage = window.location.pathname.includes('/chats/' + e.chat_id);
                             if (!isCurrentChatPage) {
                                 if (!window.unreadChats.includes(e.chat_id)) {
                                     window.unreadChats.push(e.chat_id);
@@ -670,6 +670,15 @@
                                     '/agent/chats/' + e.chat_id
                                 );
                             }
+                        } else if (e.sender_type === 'system') {
+                            if (!isCurrentChatPage) {
+                                showToast(e.message);
+                                sendDirectAlert(
+                                    'Live Chat System Alert',
+                                    e.message,
+                                    '/agent/chats/' + e.chat_id
+                                );
+                            }
                         }
                     })
                     .error(function(err) {
@@ -677,7 +686,7 @@
                         console.error('[Echo] Channel error on ' + channelName + ' (poll fallback active):', err);
                     });
 
-                // agents channel — new chat started (pending queue)
+                // agents channel — new chat started & unassigned pending queue messages
                 window.Echo.private('agents')
                     .listen('.chat.started', function(e) {
                         console.log('[Echo] .chat.started received:', e);
@@ -689,6 +698,26 @@
                             (e.visitor_name || 'Visitor') + ' is waiting in the queue.',
                             '/agent/queue'
                         );
+                    })
+                    .listen('.message.new', function(e) {
+                        console.log('[Echo] .message.new on agents channel:', e);
+                        if (e.sender_type === 'visitor') {
+                            var isCurrentChatPage = window.location.pathname.includes('/chats/' + e.chat_id);
+                            if (!isCurrentChatPage) {
+                                if (!window.unreadChats.includes(e.chat_id)) {
+                                    window.unreadChats.push(e.chat_id);
+                                    localStorage.setItem('unreadChats', JSON.stringify(window.unreadChats));
+                                }
+                                updateUnreadUI();
+                                flashChatRow(e.chat_id);
+                                showToast('New pending queue message from visitor #' + e.chat_id);
+                                sendDirectAlert(
+                                    'New pending chat message',
+                                    e.message,
+                                    '/agent/queue'
+                                );
+                            }
+                        }
                     });
 
                 // agent.queue channel — queue count changed (accept, close, transfer)

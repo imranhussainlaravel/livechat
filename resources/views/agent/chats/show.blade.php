@@ -418,12 +418,16 @@
                 .listen('.message.new', function(e) {
                     if (e.sender_type === 'visitor') {
                         appendVisitorMessage(e.message, e.created_at);
+                        if (typeof playAlertSound === 'function') playAlertSound(false);
                     } else if (e.sender_type === 'bot') {
                         appendBotMessage(e.message, e.created_at, e.sender_name);
+                        if (typeof playAlertSound === 'function') playAlertSound(false);
                     } else if (e.sender_type === 'system') {
                         appendSystemMessage(e.message);
+                        if (typeof playAlertSound === 'function') playAlertSound(false);
                     } else if (e.sender_type === 'agent' && e.sender_id !== currentUserId) {
                         appendAgentMessage(e.message);
+                        if (typeof playAlertSound === 'function') playAlertSound(false);
                     }
                 })
                 .listen('.chat.seen', function(e) {

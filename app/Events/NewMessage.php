@@ -30,10 +30,13 @@ class NewMessage implements ShouldBroadcastNow
             new PrivateChannel('chat.'.$this->message->chat_id),
         ];
 
-        // Also broadcast to the assigned agent's personal channel for global push notifications
+        // Also broadcast to the assigned agent's personal channel or global agents channel if unassigned
         $chat = $this->message->chat;
         if ($chat && $chat->assigned_agent_id) {
             $channels[] = new PrivateChannel('agent.'.$chat->assigned_agent_id);
+        } else {
+            // Unassigned pending queue chat — broadcast to all online agents
+            $channels[] = new PrivateChannel('agents');
         }
 
         // Also broadcast to the global admin channel so admins get all notifications
