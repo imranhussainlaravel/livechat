@@ -169,12 +169,16 @@
             var panel = document.getElementById('direct-alert-permission');
             if (!panel) return;
 
-            // Once the user has opted in (sound unlocked) we dismiss the panel
-            // for good. Browser notification permission is best-effort: if it
-            // was denied or dismissed, or we're on a non-secure origin, the
-            // button can't re-request it anyway — sound alerts still work, so
-            // there's nothing left to nag about.
-            panel.classList.toggle('hidden', alertSoundUnlocked);
+            // Keep prompting until alerts are FULLY set up: sound unlocked AND
+            // OS notification permission granted (so alerts pop even when you're
+            // on another tab / minimized). Exceptions where the button can't help:
+            //  - Notifications unsupported by the browser
+            //  - permission already 'denied' (browser won't re-prompt; user must
+            //    change it in site settings) — don't nag once sound is unlocked.
+            var perm = ('Notification' in window) ? Notification.permission : 'granted';
+            var fullyReady = alertSoundUnlocked && perm === 'granted';
+            var deniedDeadEnd = alertSoundUnlocked && perm === 'denied';
+            panel.classList.toggle('hidden', fullyReady || deniedDeadEnd);
         }
 
         function unlockAlertSound() {
@@ -773,6 +777,17 @@
             var Q_KEY = 'lastQueueChatId';
             var M_KEY = 'lastMyMsgId';
 
+            // When Reverb (Echo) is connected it delivers alerts in real-time,
+            // so the poll should NOT also fire them (avoid double notifications).
+            // It still keeps badges + queue rows in sync as a safety net.
+            function echoLive() {
+                try {
+                    return !!(window.Echo && window.Echo.connector && window.Echo.connector.pusher
+                        && window.Echo.connector.pusher.connection
+                        && window.Echo.connector.pusher.connection.state === 'connected');
+                } catch (e) { return false; }
+            }
+
             function pollLiveChat() {
                 fetch(LC_URL, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
                     .then(function (r) { return r.ok ? r.json() : null; })
@@ -804,8 +819,10 @@
                                 localStorage.setItem(Q_KEY, data.latest_pending.id);
                             } else if (data.latest_pending.id > lastQ) {
                                 localStorage.setItem(Q_KEY, data.latest_pending.id);
-                                if (window.showToast) showToast('New chat from ' + data.latest_pending.visitor_name);
-                                if (window.sendDirectAlert) sendDirectAlert('New live chat', data.latest_pending.visitor_name + ' is waiting in the queue.', '/agent/queue');
+                                if (!echoLive()) {
+                                    if (window.showToast) showToast('New chat from ' + data.latest_pending.visitor_name);
+                                    if (window.sendDirectAlert) sendDirectAlert('New live chat', data.latest_pending.visitor_name + ' is waiting in the queue.', '/agent/queue');
+                                }
                             }
                         }
 
@@ -818,7 +835,7 @@
                                 localStorage.setItem(M_KEY, data.latest_message.id);
                                 var cid = data.latest_message.chat_id;
                                 var onThatChat = new RegExp('/chats/' + cid + '(?:\\D|$)').test(window.location.pathname);
-                                if (!onThatChat) {
+                                if (!onThatChat && !echoLive()) {
                                     // Reuse the unread-badge system so "My Chats" updates too.
                                     try {
                                         window.unreadChats = JSON.parse(localStorage.getItem('unreadChats') || '[]');
