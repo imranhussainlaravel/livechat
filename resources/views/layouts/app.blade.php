@@ -5,8 +5,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow, noarchive">
-    <title>Nexon Live Chat</title>
-    <link rel="icon" type="image/webp" href="https://images.nexonpackaging.com/logo.webp">
+    <!-- PWA Manifest & App Metadata -->
+    <meta name="theme-color" content="#6366F1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="LiveChat">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js').then(function(reg) {
+                    console.log('[PWA] Service Worker registered:', reg.scope);
+                }).catch(function(err) {
+                    console.error('[PWA] Service Worker failed:', err);
+                });
+            });
+        }
+    </script>
     {{-- Theme (dark/light/system) — set before paint to avoid a flash --}}
     <script>
         window.applyTheme = function () {
