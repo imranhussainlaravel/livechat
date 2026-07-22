@@ -9,6 +9,14 @@
     </div>
 
     <div class="flex items-center gap-3">
+    {{-- PWA Install Button --}}
+    <button type="button" onclick="window.openPwaModal && window.openPwaModal()" title="Install App" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#6366F1]/20 hover:bg-[#6366F1]/30 border border-[#6366F1]/40 text-[#818CF8] text-xs font-bold transition-all shadow-sm active:scale-95">
+        <svg class="w-4 h-4 text-[#6366F1] animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+        </svg>
+        <span class="hidden sm:inline">Install App</span>
+    </button>
+
     {{-- Theme switcher: System / Light / Dark --}}
     <div class="relative" x-data="{ open: false, theme: (localStorage.getItem('theme') || 'system'), set(t) { this.theme = t; localStorage.setItem('theme', t); window.applyTheme && window.applyTheme(); this.open = false; } }">
         <button @click="open = !open" title="Theme" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/80 transition-all">

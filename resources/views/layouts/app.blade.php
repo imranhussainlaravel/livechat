@@ -27,20 +27,33 @@
         window.addEventListener('beforeinstallprompt', function(e) {
             e.preventDefault();
             deferredPwaPrompt = e;
-            var btn = document.getElementById('pwa-install-btn');
-            if (btn) btn.classList.remove('hidden');
+            var c = document.getElementById('pwa-direct-install-container');
+            if (c) c.classList.remove('hidden');
         });
 
-        window.triggerPwaInstall = function() {
+        window.openPwaModal = function() {
+            var modal = document.getElementById('pwa-install-modal');
+            if (modal) modal.classList.remove('hidden');
+            if (deferredPwaPrompt) {
+                var c = document.getElementById('pwa-direct-install-container');
+                if (c) c.classList.remove('hidden');
+            }
+        };
+
+        window.closePwaModal = function() {
+            var modal = document.getElementById('pwa-install-modal');
+            if (modal) modal.classList.add('hidden');
+        };
+
+        window.triggerDirectPwaPrompt = function() {
             if (!deferredPwaPrompt) return;
             deferredPwaPrompt.prompt();
-            deferredPwaPrompt.userChoice.then(function(choiceResult) {
-                if (choiceResult.outcome === 'accepted') {
-                    console.log('[PWA] User accepted install prompt');
+            deferredPwaPrompt.userChoice.then(function(result) {
+                if (result.outcome === 'accepted') {
+                    console.log('[PWA] User accepted installation prompt');
+                    closePwaModal();
                 }
                 deferredPwaPrompt = null;
-                var btn = document.getElementById('pwa-install-btn');
-                if (btn) btn.classList.add('hidden');
             });
         };
     </script>
@@ -962,7 +975,64 @@
             @if($errors->any()) showToast(@json($errors->first()), 'error'); @endif
         });
     </script>
-    @endif
+    {{-- PWA Installation Guidance Modal --}}
+    <div id="pwa-install-modal" class="hidden fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+        <div class="relative w-full max-w-md bg-slate-900 border border-slate-700/60 rounded-2xl p-6 shadow-2xl text-slate-100">
+            <button type="button" onclick="closePwaModal()" class="absolute top-4 right-4 p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+
+            <div class="flex items-center gap-3.5 mb-4">
+                <div class="w-12 h-12 rounded-xl bg-[#6366F1]/20 border border-[#6366F1]/40 flex items-center justify-center text-[#6366F1] shrink-0">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-slate-100 m-0">Install Nexon LiveChat App</h3>
+                    <p class="text-xs text-slate-400 m-0 mt-0.5">Install on Desktop or Mobile for instant alerts</p>
+                </div>
+            </div>
+
+            <div id="pwa-direct-install-container" class="mb-4 hidden">
+                <button type="button" onclick="triggerDirectPwaPrompt()" class="w-full py-3 bg-[#6366F1] hover:bg-[#4F46E5] text-white font-bold text-sm rounded-xl shadow-lg shadow-[#6366F1]/30 transition active:scale-95 flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    Click Here to Install App Now
+                </button>
+            </div>
+
+            <div class="space-y-3 text-xs text-slate-300 bg-slate-950/60 p-4 rounded-xl border border-slate-800/80">
+                <p class="font-bold text-[#6366F1] uppercase tracking-wider text-[10px] m-0">How to Install manually:</p>
+
+                <div class="flex items-start gap-2.5">
+                    <div class="w-5 h-5 rounded bg-slate-800 text-slate-300 font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">1</div>
+                    <div>
+                        <p class="font-semibold text-slate-200 m-0">Chrome / Edge (Desktop):</p>
+                        <p class="text-slate-400 m-0">Look at top right of address bar & click <strong>Install App</strong> (or 3 dots menu &rarr; <em>Install LiveChat...</em>).</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start gap-2.5">
+                    <div class="w-5 h-5 rounded bg-slate-800 text-slate-300 font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">2</div>
+                    <div>
+                        <p class="font-semibold text-slate-200 m-0">Android (Chrome):</p>
+                        <p class="text-slate-400 m-0">Tap 3 dots (⋮) in top right corner &rarr; select <strong>Add to Home screen</strong>.</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start gap-2.5">
+                    <div class="w-5 h-5 rounded bg-slate-800 text-slate-300 font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">3</div>
+                    <div>
+                        <p class="font-semibold text-slate-200 m-0">iPhone / iPad (Safari):</p>
+                        <p class="text-slate-400 m-0">Tap Share button (&uarr;) at bottom &rarr; select <strong>Add to Home Screen</strong>.</p>
+                    </div>
+                </div>
+            </div>
+
+            <button type="button" onclick="closePwaModal()" class="w-full mt-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs rounded-xl transition">
+                Close Guide
+            </button>
+        </div>
+    </div>
+
     @stack('scripts')
 </body>
 
