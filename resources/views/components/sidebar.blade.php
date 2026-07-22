@@ -1,4 +1,4 @@
-﻿@php
+@php
     $pendingQueueCount = \App\Models\Chat::where('queue_status', \App\Enums\QueueStatus::QUEUED)
         ->whereNull('assigned_agent_id')
         ->where('status', \App\Enums\ChatStatus::PENDING)
@@ -178,6 +178,16 @@
                 </a>
             </li>
             @endif
+
+            {{-- ─────────────  PWA Install Button  ───────────── --}}
+            <li id="pwa-install-btn" class="hidden px-2 pt-3">
+                <button type="button" onclick="triggerPwaInstall()" class="w-full flex items-center px-4 py-2.5 bg-[#6366F1]/20 hover:bg-[#6366F1]/30 text-indigo-300 border border-[#6366F1]/40 rounded-xl transition-all duration-200 group shadow-lg shadow-[#6366F1]/10">
+                    <svg class="w-5 h-5 mr-3 text-[#6366F1] animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    <span class="text-xs font-bold uppercase tracking-wider">Install App</span>
+                </button>
+            </li>
         </ul>
     </nav>
 

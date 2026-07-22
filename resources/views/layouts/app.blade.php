@@ -22,6 +22,27 @@
                 });
             });
         }
+
+        var deferredPwaPrompt = null;
+        window.addEventListener('beforeinstallprompt', function(e) {
+            e.preventDefault();
+            deferredPwaPrompt = e;
+            var btn = document.getElementById('pwa-install-btn');
+            if (btn) btn.classList.remove('hidden');
+        });
+
+        window.triggerPwaInstall = function() {
+            if (!deferredPwaPrompt) return;
+            deferredPwaPrompt.prompt();
+            deferredPwaPrompt.userChoice.then(function(choiceResult) {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('[PWA] User accepted install prompt');
+                }
+                deferredPwaPrompt = null;
+                var btn = document.getElementById('pwa-install-btn');
+                if (btn) btn.classList.add('hidden');
+            });
+        };
     </script>
     {{-- Theme (dark/light/system) — set before paint to avoid a flash --}}
     <script>
