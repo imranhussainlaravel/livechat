@@ -57,7 +57,18 @@ class AgentController extends Controller
             return response()->json(['message' => 'Agent created.'], 201);
         }
 
-        return redirect()->route('admin.agents.index')->with('success', 'Agent created successfully.');
+        // Flash the credentials once so the admin can copy + send them to the
+        // new agent. Plaintext password is safe here — the admin just typed it,
+        // it's shown a single time, then gone on the next request.
+        return redirect()->route('admin.agents.index')
+            ->with('success', 'Agent created successfully.')
+            ->with('new_agent', [
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => $request->password,
+                'role' => $request->input('role', UserRole::AGENT->value),
+                'login_url' => route('login'),
+            ]);
     }
 
     /**

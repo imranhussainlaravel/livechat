@@ -4,7 +4,9 @@
 @endphp
 
 {{-- ─── Create Company modal ─── --}}
-<div id="crm-modal-company" class="hidden fixed inset-0 z-[9998] flex items-center justify-center p-4">
+{{-- Higher z than the contact modal (z-[9998]) so it stacks ON TOP when
+     opened from within Contact ("+ new company"), not behind it. --}}
+<div id="crm-modal-company" class="hidden fixed inset-0 z-[10000] flex items-center justify-center p-4">
     <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="crmModal.close('company')"></div>
     <div class="relative w-full max-w-md max-h-[90vh] overflow-y-auto bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl">
         <div class="flex items-center justify-between px-6 py-4 border-b border-slate-700/60">

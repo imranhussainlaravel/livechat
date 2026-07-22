@@ -10,6 +10,38 @@
     </div>
 </div>
 
+{{-- New-agent credentials card — shown once, right after creation, so the
+     admin can copy the login details + URL and send them to the agent. --}}
+@if(session('new_agent'))
+@php($na = session('new_agent'))
+<div id="new-agent-card" class="bg-emerald-900/20 border border-emerald-700/40 rounded-lg shadow-sm p-6 mb-8">
+    <div class="flex items-start justify-between gap-4 mb-4">
+        <div class="flex items-center gap-2">
+            <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <h3 class="text-base font-semibold text-gray-100">Agent created — share these login details</h3>
+        </div>
+        <button type="button" onclick="document.getElementById('new-agent-card').remove()" class="text-gray-400 hover:text-white shrink-0" title="Dismiss">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm mb-4">
+        <div><span class="text-gray-500">Name:</span> <span class="text-gray-100 font-medium">{{ $na['name'] }}</span></div>
+        <div><span class="text-gray-500">Login URL:</span> <a href="{{ $na['login_url'] }}" class="text-blue-400 font-medium break-all">{{ $na['login_url'] }}</a></div>
+        <div><span class="text-gray-500">Email:</span> <span class="text-gray-100 font-medium">{{ $na['email'] }}</span></div>
+        <div><span class="text-gray-500">Password:</span> <span class="text-gray-100 font-medium font-mono">{{ $na['password'] }}</span></div>
+    </div>
+    <div class="flex items-center gap-3">
+        <button type="button" id="copy-agent-details"
+            data-details="Hi {{ $na['name'] }}, your account is ready.&#10;Login URL: {{ $na['login_url'] }}&#10;Email: {{ $na['email'] }}&#10;Password: {{ $na['password'] }}&#10;Please change your password after first login."
+            class="inline-flex items-center gap-2 py-2 px-4 rounded-md text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+            Copy details
+        </button>
+        <span class="text-xs text-gray-500">These details won't be shown again after you leave this page.</span>
+    </div>
+</div>
+@endif
+
 {{-- Create Agent Form --}}
 <div class="bg-gray-900 border border-gray-800 rounded-lg shadow-sm p-6 mb-8">
     <h3 class="text-base font-semibold text-gray-100 mb-4 flex items-center gap-2">
@@ -23,17 +55,24 @@
         <div>
             <label for="name" class="block text-sm font-medium leading-6 text-gray-100 mb-1">Full Name</label>
             <input type="text" name="name" id="name" placeholder="e.g. Jane Doe" required
-                class="block w-full rounded-md border-0 py-1.5 text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6">
+                class="block w-full rounded-md border-0 py-1.5 bg-gray-800 text-gray-100 shadow-sm ring-1 ring-inset ring-gray-700 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6">
         </div>
         <div>
             <label for="email" class="block text-sm font-medium leading-6 text-gray-100 mb-1">Email Address</label>
             <input type="email" name="email" id="email" placeholder="jane@company.com" required
-                class="block w-full rounded-md border-0 py-1.5 text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6">
+                class="block w-full rounded-md border-0 py-1.5 bg-gray-800 text-gray-100 shadow-sm ring-1 ring-inset ring-gray-700 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6">
         </div>
         <div>
             <label for="password" class="block text-sm font-medium leading-6 text-gray-100 mb-1">Password</label>
-            <input type="password" name="password" id="password" placeholder="Min 8 characters" required minlength="8"
-                class="block w-full rounded-md border-0 py-1.5 text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6">
+            <div class="relative">
+                <input type="password" name="password" id="password" placeholder="Min 8 characters" required minlength="8"
+                    class="block w-full rounded-md border-0 py-1.5 pr-10 bg-gray-800 text-gray-100 shadow-sm ring-1 ring-inset ring-gray-700 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6">
+                <button type="button" id="toggle-password" tabindex="-1" title="Show password"
+                    class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-100">
+                    <svg id="pw-eye" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    <svg id="pw-eye-off" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path></svg>
+                </button>
+            </div>
         </div>
         <div>
             <label for="role" class="block text-sm font-medium leading-6 text-gray-100 mb-1">Role</label>
@@ -170,5 +209,50 @@
     {{ $agents->links() }}
 </div>
 @endif
+
+@push('scripts')
+<script>
+    // Document-level delegation so it survives Turbo body swaps (bind once).
+    if (!window._agentFormBound) {
+        window._agentFormBound = true;
+
+        document.addEventListener('click', function (e) {
+            // Show / hide password
+            if (e.target.closest('#toggle-password')) {
+                var input = document.getElementById('password');
+                var eye = document.getElementById('pw-eye');
+                var eyeOff = document.getElementById('pw-eye-off');
+                if (!input) return;
+                var show = input.type === 'password';
+                input.type = show ? 'text' : 'password';
+                if (eye) eye.classList.toggle('hidden', show);
+                if (eyeOff) eyeOff.classList.toggle('hidden', !show);
+                e.target.closest('#toggle-password').title = show ? 'Hide password' : 'Show password';
+                return;
+            }
+
+            // Copy new-agent credentials + login URL
+            var copyBtn = e.target.closest('#copy-agent-details');
+            if (copyBtn) {
+                var text = copyBtn.getAttribute('data-details') || '';
+                var done = function () { if (window.showToast) showToast('Details copied — paste to send to the agent.'); };
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(done).catch(function () { fallbackCopy(text, done); });
+                } else {
+                    fallbackCopy(text, done);
+                }
+            }
+        });
+
+        function fallbackCopy(text, cb) {
+            var ta = document.createElement('textarea');
+            ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+            document.body.appendChild(ta); ta.select();
+            try { document.execCommand('copy'); cb(); } catch (err) {}
+            document.body.removeChild(ta);
+        }
+    }
+</script>
+@endpush
 
 @endsection
