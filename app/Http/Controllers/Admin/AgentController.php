@@ -5,14 +5,12 @@ namespace App\Http\Controllers\Admin;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Repositories\Contracts\UserRepositoryInterface;
-use App\Services\ActivityService;
 use Illuminate\Http\Request;
 
 class AgentController extends Controller
 {
     public function __construct(
         private UserRepositoryInterface $users,
-        private ActivityService $activity,
     ) {}
 
     /**
@@ -35,17 +33,25 @@ class AgentController extends Controller
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8',
             'max_chats' => 'sometimes|integer|min:1|max:50',
+            'role' => 'sometimes|in:agent,production',
+            'work_scope' => 'sometimes|nullable|in:lead_gen_only,sales_only,full_cycle',
+            'can_live_chat' => 'sometimes|boolean',
         ]);
 
         $this->users->create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => $request->password,
-            'role' => UserRole::AGENT->value,
+            // Agent or production; admins are not created from this form.
+            'role' => $request->input('role', UserRole::AGENT->value),
             'max_chats' => $request->max_chats ?? 5,
+            // CRM fields — a chat agent doubles as a CRM user.
+            'work_scope' => $request->input('work_scope', 'full_cycle'),
+            'account_status' => 'active',
+            'created_by_admin_id' => $request->user()->id,
+            // Live Chat access (checkbox unchecked => absent => false).
+            'can_live_chat' => $request->boolean('can_live_chat', true),
         ]);
-
-        $this->activity->log($request->user()->id, 'agent.created', 'User', null);
 
         if ($request->expectsJson()) {
             return response()->json(['message' => 'Agent created.'], 201);
@@ -55,12 +61,24 @@ class AgentController extends Controller
     }
 
     /**
+     * PATCH /admin/agents/{id}/live-chat — Toggle a user's Live Chat access.
+     */
+    public function toggleLiveChat(Request $request, int $id)
+    {
+        $user = \App\Models\User::findOrFail($id);
+        $user->update(['can_live_chat' => ! $user->can_live_chat]);
+
+        return back()->with('success', $user->can_live_chat
+            ? "Live Chat enabled for {$user->name}."
+            : "Live Chat disabled for {$user->name}.");
+    }
+
+    /**
      * DELETE /admin/agents/{id} — Remove an agent.
      */
     public function destroy(Request $request, int $id)
     {
         $this->users->delete($id);
-        $this->activity->log($request->user()->id, 'agent.deleted', 'User', $id);
 
         if ($request->expectsJson()) {
             return response()->json(['message' => 'Agent removed.']);

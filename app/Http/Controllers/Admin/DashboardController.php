@@ -6,6 +6,9 @@ use App\Enums\ChatStatus;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\Chat;
+use App\Models\Deal;
+use App\Models\Lead;
+use App\Models\Order;
 use App\Models\User;
 
 class DashboardController extends Controller
@@ -24,6 +27,17 @@ class DashboardController extends Controller
             'total_ongoing' => Chat::whereIn('status', ['pending', 'assigned', 'active'])->count(),
         ];
 
+        // ── CRM overview (organisation-wide) ──────────────────────────
+        $crm = [
+            'leads_total'    => Lead::count(),
+            'leads_open'     => Lead::whereNotIn('status', ['won', 'lost'])->count(),
+            'deals_open'     => Deal::whereNotIn('stage', ['won', 'lost'])->count(),
+            'pipeline_value' => (float) Deal::whereIn('stage', ['quoted', 'negotiation'])->sum('value'),
+            'deals_won'      => Deal::where('stage', 'won')->count(),
+            'won_value'      => (float) Deal::where('stage', 'won')->sum('value'),
+            'orders_active'  => Order::whereNotIn('status', ['delivered'])->count(),
+        ];
+
         $agents = User::where('role', UserRole::AGENT)
             ->withCount(['assignedChats' => fn ($q) => $q->whereIn('status', ['assigned', 'active'])])
             ->get();
@@ -40,6 +54,6 @@ class DashboardController extends Controller
             $graphData['values'][] = Chat::whereDate('created_at', $date)->count();
         }
 
-        return view('admin.dashboard', compact('stats', 'agents', 'graphData'));
+        return view('admin.dashboard', compact('stats', 'crm', 'agents', 'graphData'));
     }
 }

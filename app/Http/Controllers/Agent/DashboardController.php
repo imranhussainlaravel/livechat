@@ -7,6 +7,8 @@ use App\Enums\MessageSenderType;
 use App\Http\Controllers\Controller;
 use App\Models\Chat;
 use App\Models\ChatMessage;
+use App\Models\Deal;
+use App\Models\Lead;
 use App\Repositories\Contracts\ChatRepositoryInterface;
 use Illuminate\Http\Request;
 
@@ -65,6 +67,21 @@ class DashboardController extends Controller
                 ->count();
         }
 
+        // ── CRM figures for this agent (own records only) ──────────────
+        $myLeads = Lead::where('assigned_agent_id', $agentId)->count();
+        $myOpenLeads = Lead::where('assigned_agent_id', $agentId)
+            ->whereNotIn('status', ['won', 'lost'])
+            ->count();
+        $myOpenDeals = Deal::where('sales_rep_id', $agentId)
+            ->whereNotIn('stage', ['won', 'lost'])
+            ->count();
+        $myPipelineValue = (float) Deal::where('sales_rep_id', $agentId)
+            ->whereNotIn('stage', ['won', 'lost'])
+            ->sum('value');
+        $myWonDeals = Deal::where('sales_rep_id', $agentId)
+            ->where('stage', 'won')
+            ->count();
+
         return view('agent.dashboard', [
             'metrics' => [
                 'active_chats' => $activeChats,
@@ -73,6 +90,13 @@ class DashboardController extends Controller
                 'avg_resolution_mins' => floor((float) $avgResolutionTime),
                 'messages_sent_today' => $messagesSentToday,
                 'pending_queue' => $pendingChats,
+            ],
+            'crm' => [
+                'my_leads' => $myLeads,
+                'my_open_leads' => $myOpenLeads,
+                'my_open_deals' => $myOpenDeals,
+                'my_pipeline_value' => $myPipelineValue,
+                'my_won_deals' => $myWonDeals,
             ],
             'recentChats' => $recentChats,
             'graphData' => $graphData,

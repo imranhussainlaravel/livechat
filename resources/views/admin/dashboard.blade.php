@@ -85,6 +85,68 @@
 
 </div>
 
+{{-- ── CRM Overview ─────────────────────────────────────────── --}}
+<div class="flex items-center justify-between mb-3">
+    <h2 class="text-xs font-black uppercase tracking-[0.2em] text-slate-500">CRM Overview</h2>
+    <a href="{{ route('crm.leads.index') }}" class="text-xs font-semibold text-[#6366F1] hover:text-[#818CF8]">Open CRM &rarr;</a>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
+    <a href="{{ route('crm.leads.index') }}" class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 hover:border-[#6366F1]/30 transition-colors group">
+        <div class="flex items-center justify-between mb-3">
+            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Open Leads</p>
+            <div class="w-8 h-8 rounded-lg bg-[#6366F1]/10 border border-[#6366F1]/20 flex items-center justify-center">
+                <svg class="w-4 h-4 text-[#6366F1]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L14 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 018 21v-7.586L3.293 6.707A1 1 0 013 6V4z"/></svg>
+            </div>
+        </div>
+        <p class="text-3xl font-extrabold text-white leading-none mb-1">{{ $crm['leads_open'] ?? 0 }}</p>
+        <p class="text-[11px] text-slate-500">of {{ $crm['leads_total'] ?? 0 }} total</p>
+    </a>
+
+    <a href="{{ route('crm.deals.index') }}" class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 hover:border-sky-500/30 transition-colors group">
+        <div class="flex items-center justify-between mb-3">
+            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Open Deals</p>
+            <div class="w-8 h-8 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center">
+                <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+            </div>
+        </div>
+        <p class="text-3xl font-extrabold text-white leading-none mb-1">{{ $crm['deals_open'] ?? 0 }}</p>
+        <p class="text-[11px] text-slate-500">In pipeline</p>
+    </a>
+
+    <a href="{{ route('crm.deals.index') }}" class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 hover:border-amber-500/30 transition-colors group">
+        <div class="flex items-center justify-between mb-3">
+            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Pipeline</p>
+            <div class="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+                <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V6m0 12v-2m0 2c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+        </div>
+        <p class="text-2xl font-extrabold text-white leading-none mb-1">PKR {{ number_format($crm['pipeline_value'] ?? 0, 0) }}</p>
+        <p class="text-[11px] text-slate-500">Open deal value</p>
+    </a>
+
+    <a href="{{ route('crm.deals.index') }}" class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 hover:border-emerald-500/30 transition-colors group">
+        <div class="flex items-center justify-between mb-3">
+            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Won</p>
+            <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+        </div>
+        <p class="text-3xl font-extrabold text-emerald-400 leading-none mb-1">{{ $crm['deals_won'] ?? 0 }}</p>
+        <p class="text-[11px] text-slate-500">PKR {{ number_format($crm['won_value'] ?? 0, 0) }}</p>
+    </a>
+
+    <a href="{{ route('crm.orders.index') }}" class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 hover:border-violet-500/30 transition-colors group">
+        <div class="flex items-center justify-between mb-3">
+            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Active Orders</p>
+            <div class="w-8 h-8 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
+                <svg class="w-4 h-4 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+            </div>
+        </div>
+        <p class="text-3xl font-extrabold text-white leading-none mb-1">{{ $crm['orders_active'] ?? 0 }}</p>
+        <p class="text-[11px] text-slate-500">Not yet delivered</p>
+    </a>
+</div>
+
 {{-- ── Chart + Agents ───────────────────────────────────────── --}}
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
 

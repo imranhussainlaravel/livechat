@@ -15,7 +15,6 @@ use App\Http\Requests\TransferChatRequest;
 use App\Repositories\Contracts\ChatRepositoryInterface;
 use App\Repositories\Contracts\MessageRepositoryInterface;
 use App\Repositories\Contracts\UserRepositoryInterface;
-use App\Services\ActivityService;
 use App\Services\ChatService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -27,7 +26,6 @@ class ChatController extends Controller
         private ChatService $chatService,
         private ChatRepositoryInterface $chats,
         private UserRepositoryInterface $users,
-        private ActivityService $activity,
     ) {}
 
     /**
@@ -64,7 +62,7 @@ class ChatController extends Controller
         ]);
 
         // Get Interaction Timeline
-        $timeline = app(\App\Repositories\Contracts\ActivityRepositoryInterface::class)->getByChat($id);
+        $timeline = [];
 
         // Identify the most recent previous agent who had this chat
         $previousAgentId = $chat->transfers->last()?->from_agent_id;
@@ -211,7 +209,6 @@ class ChatController extends Controller
         $metadata['internal_note'] = $request->note;
 
         $visitor->update(['metadata' => $metadata]);
-        $this->activity->log($request->user()->id, 'visitor.note_added', 'Visitor', $visitor->id);
 
         if ($request->expectsJson()) {
             return response()->json(['message' => 'Note added.', 'data' => $metadata['notes']]);

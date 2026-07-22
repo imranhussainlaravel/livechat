@@ -7,6 +7,22 @@
     <meta name="robots" content="noindex, nofollow, noarchive">
     <title>Nexon Live Chat</title>
     <link rel="icon" type="image/webp" href="https://images.nexonpackaging.com/logo.webp">
+    {{-- Theme (dark/light/system) — set before paint to avoid a flash --}}
+    <script>
+        window.applyTheme = function () {
+            var t = localStorage.getItem('theme') || 'system';
+            var dark = t === 'dark' || (t === 'system' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+            var r = document.documentElement;
+            r.setAttribute('data-theme', dark ? 'dark' : 'light');
+            r.classList.toggle('dark', dark);
+        };
+        window.applyTheme();
+        try {
+            matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () {
+                if ((localStorage.getItem('theme') || 'system') === 'system') window.applyTheme();
+            });
+        } catch (e) {}
+    </script>
     <link rel="stylesheet" href="/css/app.css">
     <script src="/js/app.js"></script>
 
@@ -29,8 +45,7 @@
     <!-- Turbo: SPA-like navigation (no full reloads) -->
     <script src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@8.0.12/dist/turbo.es2017-umd.js"></script>
 
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind: precompiled stylesheet (/css/app.css) is loaded above; the in-browser CDN was removed for speed. -->
     <script src="https://unpkg.com/alpinejs" defer></script>
 
     @stack('head')
@@ -654,6 +669,18 @@
             });
         @endif
     </script>
+
+    {{-- Flash feedback for standard (non-AJAX) form redirects, e.g. CRM screens. Reuses showToast(). --}}
+    @if(session('success') || session('error') || $errors->any())
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (!window.showToast) return;
+            @if(session('success')) showToast(@json(session('success')), 'success'); @endif
+            @if(session('error')) showToast(@json(session('error')), 'error'); @endif
+            @if($errors->any()) showToast(@json($errors->first()), 'error'); @endif
+        });
+    </script>
+    @endif
     @stack('scripts')
 </body>
 

@@ -463,10 +463,6 @@
                 })
                 .listen('MessageSent', function(e) {
                     setTimeout(function() { scrollToBottom(true); }, 100);
-                })
-                .listen('FollowupScheduled', function(e) {
-                    var date = new Date(e.scheduledAt).toLocaleString();
-                    appendSystemMessage('Follow-up scheduled for ' + date + ' by ' + e.agentName + '.');
                 });
 
             function appendSystemMessage(msg) {

@@ -12,14 +12,37 @@
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
     <x-stat-card title="Active Chats" :value="$metrics['active_chats'] ?? 0" icon="<svg class='w-6 h-6' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z'></path></svg>" color="blue" />
     <x-stat-card title="Pending Queue" :value="$metrics['pending_queue'] ?? 0" icon="<svg class='w-6 h-6' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'></path></svg>" color="yellow" />
-    <x-stat-card title="Followups Due" :value="$metrics['followups_due'] ?? 0" icon="<svg class='w-6 h-6' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'></path></svg>" color="red" />
     <x-circular-progress 
         title="Resolution Rate" 
         subtitle="Solved vs Assigned" 
         :current="$metrics['total_resolved'] ?? 0" 
         :total="$metrics['total_assigned'] ?? 0" 
-        color="teal" 
+        color="teal"
     />
+</div>
+
+{{-- My CRM Snapshot --}}
+<div class="mb-8">
+    <h3 class="text-xs font-black uppercase tracking-[0.2em] text-slate-500 mb-3">My CRM</h3>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <a href="{{ route('crm.leads.index') }}" class="block bg-slate-800/40 border border-slate-700/50 rounded-2xl p-5 hover:border-[#6366F1]/40 transition-colors">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Open Leads</p>
+            <p class="text-3xl font-extrabold text-white mt-1">{{ $crm['my_open_leads'] ?? 0 }}</p>
+            <p class="text-[11px] text-slate-500 mt-1">{{ $crm['my_leads'] ?? 0 }} total</p>
+        </a>
+        <a href="{{ route('crm.deals.index') }}" class="block bg-slate-800/40 border border-slate-700/50 rounded-2xl p-5 hover:border-[#6366F1]/40 transition-colors">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Open Deals</p>
+            <p class="text-3xl font-extrabold text-white mt-1">{{ $crm['my_open_deals'] ?? 0 }}</p>
+        </a>
+        <a href="{{ route('crm.deals.index') }}" class="block bg-slate-800/40 border border-slate-700/50 rounded-2xl p-5 hover:border-[#6366F1]/40 transition-colors">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Pipeline Value</p>
+            <p class="text-2xl font-extrabold text-white mt-1">PKR {{ number_format($crm['my_pipeline_value'] ?? 0, 0) }}</p>
+        </a>
+        <a href="{{ route('crm.deals.index') }}" class="block bg-slate-800/40 border border-slate-700/50 rounded-2xl p-5 hover:border-emerald-500/40 transition-colors">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Deals Won</p>
+            <p class="text-3xl font-extrabold text-emerald-400 mt-1">{{ $crm['my_won_deals'] ?? 0 }}</p>
+        </a>
+    </div>
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">

@@ -3,16 +3,11 @@
 namespace Database\Seeders;
 
 use App\Enums\ChatStatus;
-use App\Enums\FollowupStatus;
 use App\Enums\MessageSenderType;
 use App\Enums\PriorityLevel;
 use App\Enums\QueueStatus;
-use App\Enums\TicketStatus;
 use App\Enums\UserRole;
-use App\Models\Activity;
 use App\Models\Chat;
-use App\Models\Followup;
-use App\Models\Ticket;
 use App\Models\User;
 use App\Models\Visitor;
 use Illuminate\Database\Seeder;
@@ -120,31 +115,6 @@ class DemoChatSeeder extends Seeder
         }
 
         // ---------------------------------------------------------
-        // C. Ticket for Chat #1
-        // ---------------------------------------------------------
-        $ticket = Ticket::updateOrCreate(
-            ['chat_id' => $chat1->id],
-            [
-                'agent_id' => $agent1->id,
-                'status' => TicketStatus::INTERESTED,
-                'quotation_sent' => true,
-                'amount' => 250.00,
-            ]
-        );
-
-        // ---------------------------------------------------------
-        // D. Follow-up for Chat #1
-        // ---------------------------------------------------------
-        $followup = Followup::updateOrCreate(
-            ['chat_id' => $chat1->id],
-            [
-                'agent_id' => $agent1->id,
-                'followup_time' => now()->addDays(2),
-                'status' => FollowupStatus::PENDING,
-            ]
-        );
-
-        // ---------------------------------------------------------
         // E. Chat #2 (Queue Chat)
         // ---------------------------------------------------------
         $chat2 = Chat::updateOrCreate(
@@ -183,52 +153,5 @@ class DemoChatSeeder extends Seeder
             ]);
         }
 
-        // ---------------------------------------------------------
-        // F. Activity Logs
-        // ---------------------------------------------------------
-        $activities = [
-            [
-                'action' => 'agent_joined',
-                'reference_type' => Chat::class,
-                'reference_id' => $chat1->id,
-                'user_id' => $agent1->id,
-                'metadata' => ['message' => 'Agent Ali joined chat'],
-            ],
-            [
-                'action' => 'quote_sent',
-                'reference_type' => Ticket::class,
-                'reference_id' => $ticket->id,
-                'user_id' => $agent1->id,
-                'metadata' => ['message' => 'Quote sent'],
-            ],
-            [
-                'action' => 'followup_created',
-                'reference_type' => Followup::class,
-                'reference_id' => $followup->id,
-                'user_id' => $agent1->id,
-                'metadata' => ['message' => 'Follow-up created'],
-            ],
-            [
-                'action' => 'chat_created',
-                'reference_type' => Chat::class,
-                'reference_id' => $chat1->id,
-                'user_id' => null,
-                'metadata' => ['message' => 'Chat created'],
-            ],
-        ];
-
-        foreach ($activities as $act) {
-            Activity::firstOrCreate(
-                [
-                    'action' => $act['action'],
-                    'reference_type' => $act['reference_type'],
-                    'reference_id' => $act['reference_id'],
-                ],
-                [
-                    'user_id' => $act['user_id'],
-                    'metadata' => $act['metadata'],
-                ]
-            );
-        }
     }
 }

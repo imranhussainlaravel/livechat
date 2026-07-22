@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 
 <head>
     <meta charset="utf-8">
@@ -8,7 +8,15 @@
     <meta name="robots" content="noindex, nofollow, noarchive">
     <title>Nexon Live Chat</title>
     <link rel="icon" type="image/webp" href="https://images.nexonpackaging.com/logo.webp">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        (function () {
+            var t = localStorage.getItem('theme') || 'system';
+            var dark = t === 'dark' || (t === 'system' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+            document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+            document.documentElement.classList.toggle('dark', dark);
+        })();
+    </script>
+    <link rel="stylesheet" href="/css/app.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">

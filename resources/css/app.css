@@ -1,0 +1,129 @@
+@import "tailwindcss";
+
+/* Explicit sources so every class in Blade views, the public JS, and PHP is
+   compiled into public/css/app.css (this replaces the in-browser Tailwind CDN). */
+@source "../views";
+@source "../../public/js";
+@source "../../app";
+
+/* ================================================================
+   LIGHT THEME
+   The app is authored dark-first. Under html[data-theme="light"] we
+   (1) invert the slate/gray solid color scale (fixes all var()-based
+   utilities: solid bg/border/text/placeholder) and (2) override the
+   hardcoded semi-transparent (opacity-variant) surface/border classes,
+   which Tailwind compiles to fixed hex and so ignore the variables.
+   ================================================================ */
+[data-theme="light"] {
+    --color-slate-950: #eef2f7;
+    --color-slate-900: #ffffff;
+    --color-slate-800: #f8fafc;
+    --color-slate-700: #e2e8f0;
+    --color-slate-600: #cbd5e1;
+    --color-slate-500: #64748b;
+    --color-slate-400: #64748b;
+    --color-slate-300: #475569;
+    --color-slate-200: #1e293b;
+    --color-slate-100: #0f172a;
+    --color-slate-50:  #0f172a;
+    --color-gray-900: #ffffff;
+    --color-gray-800: #f1f5f9;
+    --color-gray-700: #e2e8f0;
+    --color-gray-600: #cbd5e1;
+    --color-gray-500: #64748b;
+    --color-gray-400: #64748b;
+    --color-gray-300: #cbd5e1;
+    --color-gray-200: #1e293b;
+    --color-gray-100: #0f172a;
+    background-color: #eef2f7;
+    color: #0f172a;
+}
+
+/* text-white → dark, EXCEPT on coloured buttons (keep white) */
+[data-theme="light"] .text-white { color: #0f172a; }
+[data-theme="light"] .bg-\[\#6366F1\].text-white,
+[data-theme="light"] .bg-\[\#4F46E5\].text-white,
+[data-theme="light"] .bg-emerald-600.text-white,
+[data-theme="light"] .bg-emerald-500.text-white,
+[data-theme="light"] .bg-amber-600.text-white,
+[data-theme="light"] .bg-amber-500.text-white,
+[data-theme="light"] .bg-rose-600.text-white,
+[data-theme="light"] .bg-blue-600.text-white { color: #ffffff; }
+
+/* Solid/near-solid surfaces → white */
+[data-theme="light"] .bg-slate-950\/60,
+[data-theme="light"] .bg-slate-900\/95,
+[data-theme="light"] .bg-slate-900\/80,
+[data-theme="light"] .bg-slate-900\/70,
+[data-theme="light"] .bg-slate-900\/50,
+[data-theme="light"] .bg-slate-900\/40,
+[data-theme="light"] .bg-slate-900\/30,
+[data-theme="light"] .bg-slate-800\/95,
+[data-theme="light"] .bg-slate-800\/80,
+[data-theme="light"] .bg-slate-800\/70,
+[data-theme="light"] .bg-slate-800\/60,
+[data-theme="light"] .bg-slate-800\/50,
+[data-theme="light"] .bg-slate-800\/40,
+[data-theme="light"] .bg-slate-800\/30,
+[data-theme="light"] .bg-gray-800\/50 { background-color: rgba(255, 255, 255, 0.9); }
+
+/* Subtle fills / hover rows / avatars → light grey */
+[data-theme="light"] .bg-slate-700\/60,
+[data-theme="light"] .bg-slate-700\/50,
+[data-theme="light"] .bg-slate-700\/30,
+[data-theme="light"] .bg-slate-700\/20,
+[data-theme="light"] .bg-slate-600\/50,
+[data-theme="light"] .bg-gray-700\/50 { background-color: rgba(100, 116, 139, 0.12); }
+
+/* Borders → light */
+[data-theme="light"] .border-slate-800\/60,
+[data-theme="light"] .border-slate-700\/60,
+[data-theme="light"] .border-slate-700\/50,
+[data-theme="light"] .border-slate-700\/40,
+[data-theme="light"] .border-slate-700\/30,
+[data-theme="light"] .border-slate-600\/50,
+[data-theme="light"] .border-slate-600\/30 { border-color: rgba(15, 23, 42, 0.12); }
+
+/* Row dividers */
+[data-theme="light"] .divide-slate-700\/50 > :not(:last-child),
+[data-theme="light"] .divide-slate-700\/40 > :not(:last-child) { border-color: rgba(15, 23, 42, 0.08); }
+
+/* Scrollbar (overrides the dark scrollbar defined inline in the layout) */
+[data-theme="light"] ::-webkit-scrollbar-track { background: #eef2f7; }
+[data-theme="light"] ::-webkit-scrollbar-thumb { background: #cbd5e1; }
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* ---- Coloured status badges / pills: give the pale dark-mode text real
+   contrast on light, and lighten the dark translucent fills. ---- */
+[data-theme="light"] .text-sky-400,   [data-theme="light"] .text-sky-300    { color: #0369a1; }
+[data-theme="light"] .text-blue-400,  [data-theme="light"] .text-blue-300   { color: #1d4ed8; }
+[data-theme="light"] .text-indigo-300 { color: #4338ca; }
+[data-theme="light"] .text-violet-400 { color: #6d28d9; }
+[data-theme="light"] .text-purple-400,[data-theme="light"] .text-purple-300 { color: #7e22ce; }
+[data-theme="light"] .text-emerald-400,[data-theme="light"] .text-emerald-300 { color: #047857; }
+[data-theme="light"] .text-green-300  { color: #15803d; }
+[data-theme="light"] .text-cyan-400   { color: #0e7490; }
+[data-theme="light"] .text-amber-400, [data-theme="light"] .text-amber-300  { color: #b45309; }
+[data-theme="light"] .text-yellow-300 { color: #a16207; }
+[data-theme="light"] .text-rose-400,  [data-theme="light"] .text-rose-300   { color: #be123c; }
+[data-theme="light"] .text-red-400    { color: #b91c1c; }
+
+/* Dark (…-900) translucent fills → light tints of the same hue */
+[data-theme="light"] .bg-blue-900\/30   { background-color: rgba(37, 99, 235, 0.12); }
+[data-theme="light"] .bg-green-900\/30,
+[data-theme="light"] .bg-green-900\/50  { background-color: rgba(16, 185, 129, 0.15); }
+[data-theme="light"] .bg-yellow-900\/30 { background-color: rgba(202, 138, 4, 0.16); }
+[data-theme="light"] .bg-red-900\/30    { background-color: rgba(220, 38, 38, 0.12); }
+[data-theme="light"] .bg-purple-900\/30 { background-color: rgba(147, 51, 234, 0.14); }
+[data-theme="light"] .bg-indigo-500\/20,
+[data-theme="light"] .bg-indigo-500\/30 { background-color: rgba(99, 102, 241, 0.16); }
+
+/* Keep white text on solid coloured buttons */
+[data-theme="light"] .bg-blue-700.text-white,
+[data-theme="light"] .bg-blue-600.text-white,
+[data-theme="light"] .bg-blue-500.text-white,
+[data-theme="light"] .bg-emerald-700.text-white,
+[data-theme="light"] .bg-emerald-600.text-white,
+[data-theme="light"] .bg-emerald-500.text-white,
+[data-theme="light"] .bg-red-500.text-white { color: #ffffff; }
+

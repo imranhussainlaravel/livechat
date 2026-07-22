@@ -5,7 +5,6 @@ namespace App\Jobs;
 use App\Enums\ChatStatus;
 use App\Events\ChatAssigned;
 use App\Models\Chat;
-use App\Services\ActivityService;
 use App\Services\AgentLoadService;
 use App\Services\ChatQueueService;
 use Illuminate\Bus\Queueable;
@@ -40,7 +39,6 @@ class ProcessChatQueue implements ShouldQueue
     public function handle(
         ChatQueueService $queue,
         AgentLoadService $load,
-        ActivityService $activity,
     ): void {
         // ── Step 1: Purge timed-out chats ───────────────────────────
         $timedOut = $queue->purgeTimedOut();
@@ -49,7 +47,6 @@ class ProcessChatQueue implements ShouldQueue
             $chat = Chat::find($chatId);
             if ($chat && $chat->status === ChatStatus::PENDING) {
                 $chat->update(['status' => ChatStatus::CLOSED->value, 'ended_at' => now()]);
-                $activity->log(null, 'chat.queue_timeout', 'Chat', $chatId);
             }
         }
 
@@ -98,7 +95,7 @@ class ProcessChatQueue implements ShouldQueue
                             continue;
                         }
 
-                        DB::transaction(function () use ($chat, $agent, $load, $activity) {
+                        DB::transaction(function () use ($chat, $agent, $load) {
                             $chat->update([
                                 'assigned_agent_id' => $agent->id,
                                 'status' => ChatStatus::ASSIGNED->value,
@@ -106,11 +103,6 @@ class ProcessChatQueue implements ShouldQueue
 
                             // Increment agent load in Redis
                             $load->increment($agent->id);
-
-                            $activity->log($agent->id, 'chat.auto_assigned', 'Chat', $chat->id, [
-                                'agent_name' => $agent->name,
-                                'source' => 'queue_processor',
-                            ]);
                         });
 
                         // Fire event outside transaction

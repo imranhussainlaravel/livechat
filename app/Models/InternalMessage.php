@@ -10,6 +10,7 @@ class InternalMessage extends Model
     protected $fillable = [
         'sender_id',
         'receiver_id',
+        'channel',
         'message',
         'is_read',
     ];

@@ -16,7 +16,6 @@ class AgentAssignmentService
         private AgentLoadService $load,
         private ChatQueueService $queue,
         private ChatRepositoryInterface $chats,
-        private ActivityService $activity,
     ) {}
 
     /**
@@ -36,11 +35,6 @@ class AgentAssignmentService
         if ($agents->isEmpty()) {
             // ── No agents → push to queue ───────────────────────────
             $this->queue->enqueue($chat->id);
-
-            $this->activity->log(null, 'chat.queued', 'Chat', $chat->id, [
-                'queue_position' => $this->queue->length(),
-                'reason' => 'No available agents',
-            ]);
 
             return false;
         }
@@ -66,12 +60,6 @@ class AgentAssignmentService
                         $this->load->increment($agent->id);
                     });
 
-                    $this->activity->log($agent->id, 'chat.auto_assigned', 'Chat', $chat->id, [
-                        'agent_name' => $agent->name,
-                        'active_load' => $agent->active + 1,
-                        'max_chats' => $agent->max,
-                    ]);
-
                     event(new ChatAssigned($chat->fresh(['visitor', 'agent']), $chat->fresh()->agent));
 
                     return true;
@@ -83,11 +71,6 @@ class AgentAssignmentService
 
         // ── All agents locked — queue for later ─────────────────────
         $this->queue->enqueue($chat->id);
-
-        $this->activity->log(null, 'chat.queued', 'Chat', $chat->id, [
-            'queue_position' => $this->queue->length(),
-            'reason' => 'All agents at capacity or locked',
-        ]);
 
         return false;
     }

@@ -21,9 +21,15 @@ Route::post('/logout', [LoginController::class, 'logout'])
 // Root redirect
 Route::get('/', function () {
     if (auth()->check()) {
-        return auth()->user()->isAdmin()
-            ? redirect('/admin/dashboard')
-            : redirect('/agent/dashboard');
+        $user = auth()->user();
+        if ($user->isAdmin()) {
+            return redirect('/admin/dashboard');
+        }
+
+        // CRM-only users (Live Chat disabled) land in the CRM.
+        return $user->canLiveChat()
+            ? redirect('/agent/dashboard')
+            : redirect()->route('crm.leads.index');
     }
 
     return redirect('/login');
@@ -36,7 +42,7 @@ Route::get('/', function () {
 */
 
 Route::prefix('agent')
-    ->middleware(['auth', 'role.agent'])
+    ->middleware(['auth', 'role.agent', 'can.livechat'])
     ->name('agent.')
     ->group(function () {
 
@@ -69,6 +75,9 @@ Route::prefix('agent')
             ->name('chats.updateStatus');
         Route::post('/chats/{id}/visitor-note', [\App\Http\Controllers\Agent\ChatController::class, 'addVisitorNote'])
             ->name('chats.addVisitorNote');
+        // Create a CRM lead from a chat (Phase 5) — separate controller so live chat is untouched
+        Route::post('/chats/{id}/create-lead', [\App\Http\Controllers\Agent\ChatLeadController::class, 'store'])
+            ->name('chats.createLead');
         Route::patch('/visitor/{id}', [\App\Http\Controllers\Agent\ChatController::class, 'updateVisitor'])
             ->name('visitor.update');
 
@@ -84,33 +93,14 @@ Route::prefix('agent')
         Route::patch('/status', [\App\Http\Controllers\Agent\StatusController::class, 'update'])
             ->name('status.update');
 
-        // Followups
-        Route::get('/followups', [\App\Http\Controllers\Agent\FollowupController::class, 'index'])
-            ->name('followups.index');
-        Route::post('/followups', [\App\Http\Controllers\Agent\FollowupController::class, 'store'])
-            ->name('followups.store');
-        Route::patch('/followups/{id}/complete', [\App\Http\Controllers\Agent\FollowupController::class, 'complete'])
-            ->name('followups.complete');
-        Route::patch('/followups/{id}/cancel', [\App\Http\Controllers\Agent\FollowupController::class, 'cancel'])
-            ->name('followups.cancel');
-
-        // Tickets
-        Route::get('/tickets', [\App\Http\Controllers\Agent\TicketController::class, 'index'])
-            ->name('tickets.index');
-        Route::post('/tickets', [\App\Http\Controllers\Agent\TicketController::class, 'store'])
-            ->name('tickets.store');
-        Route::patch('/tickets/{id}', [\App\Http\Controllers\Agent\TicketController::class, 'update'])
-            ->name('tickets.update');
-        Route::patch('/tickets/{id}/interested', [\App\Http\Controllers\Agent\TicketController::class, 'markInterested'])
-            ->name('tickets.markInterested');
-        Route::patch('/tickets/{id}/not-interested', [\App\Http\Controllers\Agent\TicketController::class, 'markNotInterested'])
-            ->name('tickets.markNotInterested');
-        Route::post('/tickets/{id}/quotation', [\App\Http\Controllers\Agent\TicketController::class, 'sendQuotation'])
-            ->name('tickets.sendQuotation');
-
-        // Internal Agent Chat
+        // Team Chat (internal messaging: DMs + group channels)
         Route::get('/other-agents', [\App\Http\Controllers\Agent\AgentChatController::class, 'index'])
             ->name('agents.index');
+        // NOTE: 'messages' and 'channel' declared before '{id}' so they aren't captured as an id.
+        Route::get('/other-agents/messages', [\App\Http\Controllers\Agent\AgentChatController::class, 'fetch'])
+            ->name('agents.fetch');
+        Route::post('/other-agents/channel/{key}/message', [\App\Http\Controllers\Agent\AgentChatController::class, 'storeChannel'])
+            ->name('agents.channelMessage');
         Route::get('/other-agents/{id}', [\App\Http\Controllers\Agent\AgentChatController::class, 'show'])
             ->name('agents.show');
         Route::post('/other-agents/{id}/message', [\App\Http\Controllers\Agent\AgentChatController::class, 'store'])
@@ -136,10 +126,6 @@ Route::prefix('admin')
         Route::get('/chats', [\App\Http\Controllers\Admin\ChatController::class, 'index'])
             ->name('chats.index');
 
-        // Activities
-        Route::get('/activities', [\App\Http\Controllers\Admin\ActivityController::class, 'index'])
-            ->name('activities.index');
-
         // Agent Management
         Route::get('/agents', [\App\Http\Controllers\Admin\AgentController::class, 'index'])
             ->name('agents.index');
@@ -147,6 +133,8 @@ Route::prefix('admin')
             ->name('agents.store');
         Route::delete('/agents/{id}', [\App\Http\Controllers\Admin\AgentController::class, 'destroy'])
             ->name('agents.destroy');
+        Route::patch('/agents/{id}/live-chat', [\App\Http\Controllers\Admin\AgentController::class, 'toggleLiveChat'])
+            ->name('agents.toggleLiveChat');
 
         // Queue
         Route::get('/queue', [\App\Http\Controllers\Admin\QueueController::class, 'index'])
@@ -163,10 +151,47 @@ Route::prefix('admin')
         // Reports
         Route::get('/reports', [\App\Http\Controllers\Admin\ReportsController::class, 'index'])
             ->name('reports.index');
+    });
 
-        // Tickets
-        Route::get('/tickets', [\App\Http\Controllers\Admin\TicketController::class, 'index'])
-            ->name('tickets.index');
+/*
+|--------------------------------------------------------------------------
+| CRM Routes — shared by agents and admins (records are scoped per-user
+| in the controllers). Placeholder pages for now; real modules land in
+| Phase 3+. Route names (crm.*.index) are stable so the sidebar is final.
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('crm')
+    ->middleware(['auth'])
+    ->name('crm.')
+    ->group(function () {
+        Route::resource('companies', \App\Http\Controllers\Crm\CompanyController::class);
+        Route::resource('contacts', \App\Http\Controllers\Crm\ContactController::class);
+
+        Route::resource('leads', \App\Http\Controllers\Crm\LeadController::class);
+        Route::post('leads/{lead}/status', [\App\Http\Controllers\Crm\LeadController::class, 'updateStatus'])->name('leads.updateStatus');
+        Route::post('leads/{lead}/activity', [\App\Http\Controllers\Crm\LeadController::class, 'addActivity'])->name('leads.activity');
+        Route::post('leads/{lead}/mark-lost', [\App\Http\Controllers\Crm\LeadController::class, 'markLost'])->name('leads.markLost');
+        Route::post('leads/{lead}/convert', [\App\Http\Controllers\Crm\LeadController::class, 'convert'])->name('leads.convert');
+
+        Route::resource('deals', \App\Http\Controllers\Crm\DealController::class);
+        Route::post('deals/{deal}/stage', [\App\Http\Controllers\Crm\DealController::class, 'updateStage'])->name('deals.updateStage');
+        Route::post('deals/{deal}/mark-won', [\App\Http\Controllers\Crm\DealController::class, 'markWon'])->name('deals.markWon');
+        Route::post('deals/{deal}/mark-lost', [\App\Http\Controllers\Crm\DealController::class, 'markLost'])->name('deals.markLost');
+
+        Route::resource('products', \App\Http\Controllers\Crm\ProductController::class);
+
+        Route::resource('orders', \App\Http\Controllers\Crm\OrderController::class)->only(['index', 'show', 'edit', 'update']);
+
+        // Quotations — 'create' declared before '{quotation}' so it isn't captured as a param
+        Route::get('quotations/create', [\App\Http\Controllers\Crm\QuotationController::class, 'create'])->name('quotations.create');
+        Route::post('quotations', [\App\Http\Controllers\Crm\QuotationController::class, 'store'])->name('quotations.store');
+        Route::get('quotations/{quotation}', [\App\Http\Controllers\Crm\QuotationController::class, 'show'])->name('quotations.show');
+        Route::get('quotations/{quotation}/edit', [\App\Http\Controllers\Crm\QuotationController::class, 'edit'])->name('quotations.edit');
+        Route::put('quotations/{quotation}', [\App\Http\Controllers\Crm\QuotationController::class, 'update'])->name('quotations.update');
+        Route::delete('quotations/{quotation}', [\App\Http\Controllers\Crm\QuotationController::class, 'destroy'])->name('quotations.destroy');
+        Route::get('quotations/{quotation}/pdf', [\App\Http\Controllers\Crm\QuotationController::class, 'pdf'])->name('quotations.pdf');
+        Route::post('quotations/{quotation}/approve-discount', [\App\Http\Controllers\Crm\QuotationController::class, 'approveDiscount'])->name('quotations.approveDiscount');
     });
 
 // Standard broadcast auth for agents (uses session)

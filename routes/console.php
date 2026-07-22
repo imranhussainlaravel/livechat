@@ -2,7 +2,6 @@
 
 use App\Jobs\ProcessChatQueue;
 use App\Jobs\RefreshReportingCache;
-use App\Jobs\SendFollowupReminders;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -12,7 +11,6 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::job(new ProcessChatQueue)->everyMinute();
-Schedule::job(new SendFollowupReminders)->everyMinute();
 
 // Warm up the reporting cache every 12 hours (can be adjusted)
 Schedule::job(new RefreshReportingCache(30))->twiceDaily(1, 13);

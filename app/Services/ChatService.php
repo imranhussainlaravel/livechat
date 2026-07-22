@@ -28,7 +28,6 @@ class ChatService
         private ChatRepositoryInterface $chats,
         private MessageRepositoryInterface $messages,
         private QueueService $queue,
-        private ActivityService $activity,
         private WhatsAppService $whatsApp,
     ) {}
 
@@ -157,7 +156,6 @@ class ChatService
 
             $agent = \App\Models\User::find($agentId);
             $this->systemMessage($chatId, "{$agent->name} has joined the conversation.");
-            $this->activity->log($agentId, 'chat.assigned', 'Chat', $chatId);
 
             $chat = $chat->fresh(['visitor', 'agent']);
 
@@ -260,10 +258,6 @@ class ChatService
             $chat = $this->chats->update($chatId, $updateData);
 
             $this->systemMessage($chatId, "Status changed to {$newStatus->label()}.");
-            $this->activity->log($agentId, 'chat.status_updated', 'Chat', $chatId, [
-                'from' => $oldStatus->value,
-                'to' => $newStatus->value,
-            ]);
 
             $chat = $chat->fresh(['visitor', 'agent']);
 
@@ -320,10 +314,6 @@ class ChatService
             $fromAgent = \App\Models\User::find($dto->fromAgentId);
             $toAgent = \App\Models\User::find($dto->toAgentId);
             $this->systemMessage($dto->chatId, "Chat has been transferred from {$fromAgent->name} to {$toAgent->name}.");
-
-            $this->activity->log($dto->fromAgentId, 'chat.transferred', 'Chat', $dto->chatId, [
-                'to_agent_id' => $dto->toAgentId,
-            ]);
 
             // Adjust load manually inside transfer instead of releasing and assigning freshly to avoid chat closing
             $fromLoad = \App\Models\AgentChatLoad::where('agent_id', $dto->fromAgentId)->first();
@@ -454,10 +444,5 @@ class ChatService
         $oldStatus->transitionTo($newStatus); // validate
 
         $this->chats->update($chat->id, ['status' => $newStatus->value]);
-
-        $this->activity->log($agentId, 'chat.status_auto', 'Chat', $chat->id, [
-            'from' => $oldStatus->value,
-            'to' => $newStatus->value,
-        ]);
     }
 }

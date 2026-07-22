@@ -78,16 +78,6 @@ class Chat extends Model
         return $this->hasMany(ChatTransfer::class);
     }
 
-    public function followups(): HasMany
-    {
-        return $this->hasMany(Followup::class);
-    }
-
-    public function ticket(): HasOne
-    {
-        return $this->hasOne(Ticket::class);
-    }
-
     /* ------------------------------------------------------------------ */
     /*  Scopes */
     /* ------------------------------------------------------------------ */

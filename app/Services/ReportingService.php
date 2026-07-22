@@ -6,7 +6,6 @@ use App\Enums\ChatStatus;
 use App\Enums\MessageSenderType;
 use App\Models\Chat;
 use App\Models\ChatMessage;
-use App\Models\Ticket;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -124,23 +123,8 @@ class ReportingService
      */
     private function getConversionRate(int $days): float
     {
-        $startDate = Carbon::now()->subDays($days)->startOfDay();
-
-        $totalChats = Chat::where('created_at', '>=', $startDate)->count();
-
-        if ($totalChats === 0) {
-            return 0.0;
-        }
-
-        $convertedChats = Ticket::where('created_at', '>=', $startDate)
-            ->where(function ($query) {
-                $query->where('status', 'interested')
-                    ->orWhere('quotation_sent', true);
-            })
-            ->distinct('chat_id')
-            ->count('chat_id');
-
-        return round(($convertedChats / $totalChats) * 100, 2);
+        // TODO: recompute from CRM leads→deals conversion in a later phase
+        return 0.0;
     }
 
     /**

@@ -12,7 +12,6 @@ class AuthService
 {
     public function __construct(
         private UserRepositoryInterface $users,
-        private ActivityService $activity,
     ) {}
 
     /**
@@ -26,14 +25,6 @@ class AuthService
 
         // ── Credential check ────────────────────────────────────────
         if (! $user || ! Hash::check($password, $user->password)) {
-            $this->activity->log(
-                userId: $user?->id,
-                action: 'auth.login_failed',
-                referenceType: 'User',
-                referenceId: $user?->id,
-                metadata: ['ip' => $ip, 'email' => $email],
-            );
-
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials are incorrect.'],
             ]);
@@ -50,19 +41,6 @@ class AuthService
 
         // ── Set user online ─────────────────────────────────────────
         $this->users->updateStatus($user->id, 'online');
-
-        // ── Log successful login ────────────────────────────────────
-        $this->activity->log(
-            userId: $user->id,
-            action: 'auth.login',
-            referenceType: 'User',
-            referenceId: $user->id,
-            metadata: [
-                'ip' => $ip,
-                'user_agent' => $userAgent,
-                'role' => $user->role->value,
-            ],
-        );
 
         // ── Determine redirect based on role ────────────────────────
         $redirect = match ($user->role) {
@@ -84,13 +62,6 @@ class AuthService
         $user = Auth::user();
 
         if ($user) {
-            $this->activity->log(
-                userId: $user->id,
-                action: 'auth.logout',
-                referenceType: 'User',
-                referenceId: $user->id,
-            );
-
             $this->users->updateStatus($user->id, 'offline');
         }
 

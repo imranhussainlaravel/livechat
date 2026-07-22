@@ -24,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role.admin' => \App\Http\Middleware\EnsureAdmin::class,
             'role.agent' => \App\Http\Middleware\EnsureAgent::class,
+            'can.livechat' => \App\Http\Middleware\EnsureCanLiveChat::class,
         ]);
 
         $middleware->api(prepend: [

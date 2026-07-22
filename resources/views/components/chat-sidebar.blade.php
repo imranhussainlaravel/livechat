@@ -123,31 +123,6 @@
     </div>
     @endif
 
-    {{-- 3. Followup Planner --}}
-    @if(! in_array($chat->status->value, ['closed']))
-    <div class="bg-slate-800/50 rounded-xl border border-slate-700/50 p-4">
-        <h4 class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-4 pb-2 border-b border-slate-700/50 flex items-center gap-2">
-            <svg class="w-3 h-3 text-[#6366F1]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            Schedule Follow-up
-        </h4>
-        <form method="POST" action="{{ route('agent.followups.store') }}" class="space-y-4" data-ajax-form>
-            @csrf
-            <input type="hidden" name="chat_id" value="{{ $chat->id }}">
-            <div>
-                <input type="datetime-local" name="followup_time" required class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-300 focus:ring-2 focus:ring-[#6366F1]/20 focus:border-[#6366F1] outline-none transition-all">
-            </div>
-            <div>
-                <input type="text" name="notes" placeholder="Follow-up reason..." class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-300 focus:ring-2 focus:ring-[#6366F1]/20 focus:border-[#6366F1] outline-none transition-all">
-            </div>
-            <button type="submit" class="w-full py-2.5 rounded-xl text-xs font-bold text-white bg-[#6366F1] hover:bg-[#4F46E5] transition-all shadow-lg shadow-[#6366F1]/20 uppercase tracking-widest">
-                Set Reminder
-            </button>
-        </form>
-    </div>
-    @endif
-
     {{-- 4. Transfer --}}
     @if(! in_array($chat->status->value, ['closed']))
     <div class="bg-slate-800/50 rounded-xl border border-slate-700/50 p-4">
@@ -195,31 +170,50 @@
         </form>
     </div>
 
-    {{-- 6. Sales Ticket / Quotation --}}
-    <div class="bg-emerald-500/10 rounded-xl border border-emerald-500/20 p-4">
-        <h4 class="text-[10px] font-bold text-emerald-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            Sales & Tickets
-        </h4>
-        @if(!$chat->ticket)
-        <p class="text-[11px] text-emerald-400/80 mb-4 leading-relaxed font-medium">Create a ticket to send quotations and track conversion.</p>
-        <form method="POST" action="{{ route('agent.tickets.store') }}" data-ajax-form>
-            @csrf
-            <input type="hidden" name="chat_id" value="{{ $chat->id }}">
-            <button type="submit" class="w-full py-2.5 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-600/20 uppercase tracking-widest">
-                Create Ticket
-            </button>
-        </form>
-        @else
-        <div class="space-y-4">
-            <div class="flex items-center justify-between">
-                <span class="text-[10px] font-bold text-emerald-500/50 uppercase tracking-widest">Ticket ID</span>
-                <span class="text-xs font-bold text-emerald-400">#{{ $chat->ticket->id }}</span>
-            </div>
-            <x-quotation-form :ticketId="$chat->ticket->id" />
+    {{-- 6. Create CRM Lead from this chat --}}
+    @if(auth()->user()->canCreateLeads())
+    <div class="bg-[#6366F1]/5 rounded-xl border border-[#6366F1]/20 p-4" x-data="{ open: false }">
+        <div class="flex items-center justify-between">
+            <h4 class="text-[10px] font-bold text-[#6366F1] uppercase tracking-[0.2em] flex items-center gap-2">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L14 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 018 21v-7.586L3.293 6.707A1 1 0 013 6V4z"></path></svg>
+                Create CRM Lead
+            </h4>
+            <button type="button" @click="open = !open" class="text-[10px] font-bold text-[#6366F1] hover:text-[#818CF8] uppercase tracking-widest" x-text="open ? 'Close' : 'Open'"></button>
         </div>
-        @endif
+        <div x-show="open" x-cloak class="mt-4">
+            <form method="POST" action="{{ route('agent.chats.createLead', $chat->id) }}" class="space-y-3">
+                @csrf
+                <input type="text" name="company_name" required placeholder="Company name"
+                    value="{{ old('company_name', $chat->visitor->metadata['company'] ?? '') }}"
+                    class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-[#6366F1]/20 focus:border-[#6366F1] outline-none">
+                <input type="text" name="contact_name" required placeholder="Contact name"
+                    value="{{ old('contact_name', $chat->visitor->name ?? '') }}"
+                    class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-[#6366F1]/20 focus:border-[#6366F1] outline-none">
+                <input type="email" name="email" placeholder="Email"
+                    value="{{ old('email', $chat->visitor->email ?? '') }}"
+                    class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-[#6366F1]/20 focus:border-[#6366F1] outline-none">
+                <input type="text" name="phone" placeholder="Phone (optional)"
+                    value="{{ old('phone') }}"
+                    class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-[#6366F1]/20 focus:border-[#6366F1] outline-none">
+                <div class="grid grid-cols-2 gap-2">
+                    <select name="source" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-2 py-2 text-xs text-slate-200 focus:ring-2 focus:ring-[#6366F1]/20 focus:border-[#6366F1] outline-none">
+                        @foreach(\App\Enums\LeadSource::cases() as $src)
+                        <option value="{{ $src->value }}" {{ $src->value === 'website' ? 'selected' : '' }}>{{ $src->getLabel() }}</option>
+                        @endforeach
+                    </select>
+                    <select name="product_interest" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-2 py-2 text-xs text-slate-200 focus:ring-2 focus:ring-[#6366F1]/20 focus:border-[#6366F1] outline-none">
+                        @foreach(\App\Enums\ProductInterest::cases() as $pi)
+                        <option value="{{ $pi->value }}">{{ $pi->getLabel() }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <button type="submit" class="w-full py-2.5 rounded-xl text-xs font-bold text-white bg-[#6366F1] hover:bg-[#4F46E5] transition-all shadow-lg shadow-[#6366F1]/20 uppercase tracking-widest">
+                    Create Lead
+                </button>
+            </form>
+        </div>
     </div>
+    @endif
 
     {{-- 7. Interaction Timeline --}}
     @if(isset($timeline) && count($timeline) > 0)

@@ -36,6 +36,29 @@
                 class="block w-full rounded-md border-0 py-1.5 text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6">
         </div>
         <div>
+            <label for="role" class="block text-sm font-medium leading-6 text-gray-100 mb-1">Role</label>
+            <select name="role" id="role"
+                class="block w-full rounded-md border-0 py-2 bg-gray-800 text-gray-100 shadow-sm ring-1 ring-inset ring-gray-700 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm">
+                <option value="agent">Agent</option>
+                <option value="production">Production</option>
+            </select>
+        </div>
+        <div>
+            <label for="work_scope" class="block text-sm font-medium leading-6 text-gray-100 mb-1">CRM Work Scope</label>
+            <select name="work_scope" id="work_scope"
+                class="block w-full rounded-md border-0 py-2 bg-gray-800 text-gray-100 shadow-sm ring-1 ring-inset ring-gray-700 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm">
+                @foreach(\App\Enums\WorkScope::cases() as $ws)
+                <option value="{{ $ws->value }}" {{ $ws->value === 'full_cycle' ? 'selected' : '' }}>{{ $ws->getLabel() }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="flex items-center gap-2 pt-6">
+            <input type="hidden" name="can_live_chat" value="0">
+            <input type="checkbox" name="can_live_chat" id="can_live_chat" value="1" checked
+                class="h-4 w-4 rounded border-gray-600 bg-gray-800 text-blue-600 focus:ring-blue-500">
+            <label for="can_live_chat" class="text-sm font-medium text-gray-100">Can access Live Chat</label>
+        </div>
+        <div>
             <button type="submit" class="w-full flex justify-center items-center gap-2 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
@@ -95,6 +118,23 @@
                     <span class="inline-flex items-center justify-center w-full px-2.5 py-0.5 rounded-full text-xs font-medium {{ $statusClass }}">
                         {{ ucfirst($statusVal) }}
                     </span>
+                </div>
+
+                {{-- Live Chat access toggle --}}
+                <div class="w-28 text-center">
+                    <form method="POST" action="{{ route('admin.agents.toggleLiveChat', $agent->id) }}">
+                        @csrf
+                        @method('PATCH')
+                        @if($agent->can_live_chat)
+                        <button type="submit" title="Click to disable Live Chat" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-900/30 text-green-300 hover:bg-green-900/50 transition">
+                            <span class="w-1.5 h-1.5 rounded-full bg-green-400"></span> Live Chat on
+                        </button>
+                        @else
+                        <button type="submit" title="Click to enable Live Chat" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-800 text-gray-400 hover:bg-gray-700 transition">
+                            <span class="w-1.5 h-1.5 rounded-full bg-gray-500"></span> CRM only
+                        </button>
+                        @endif
+                    </form>
                 </div>
 
                 <div class="border-l border-gray-700 pl-4">
