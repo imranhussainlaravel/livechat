@@ -39,15 +39,21 @@ class AppServiceProvider extends ServiceProvider
                 }])->get();
 
                 // Group-channel unread (per-user read marker) added to the DM total
-                // so the sidebar/header badge reflects channels too.
-                $reads = \App\Models\ChannelRead::where('user_id', auth()->id())
-                    ->pluck('last_read_message_id', 'channel');
+                // so the sidebar/header badge reflects channels too. Wrapped so a
+                // pending migration (missing channel_reads table) can never 500
+                // every page — it just falls back to the DM-only count.
                 $channelUnread = 0;
-                foreach (array_keys(\App\Http\Controllers\Agent\AgentChatController::CHANNELS) as $ch) {
-                    $channelUnread += \App\Models\InternalMessage::where('channel', $ch)
-                        ->where('id', '>', ($reads[$ch] ?? 0))
-                        ->where('sender_id', '!=', auth()->id())
-                        ->count();
+                try {
+                    $reads = \App\Models\ChannelRead::where('user_id', auth()->id())
+                        ->pluck('last_read_message_id', 'channel');
+                    foreach (array_keys(\App\Http\Controllers\Agent\AgentChatController::CHANNELS) as $ch) {
+                        $channelUnread += \App\Models\InternalMessage::where('channel', $ch)
+                            ->where('id', '>', ($reads[$ch] ?? 0))
+                            ->where('sender_id', '!=', auth()->id())
+                            ->count();
+                    }
+                } catch (\Throwable $e) {
+                    $channelUnread = 0;
                 }
 
                 $view->with('unreadAgents', $unreadAgents);
