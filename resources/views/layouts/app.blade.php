@@ -975,6 +975,7 @@
             @if($errors->any()) showToast(@json($errors->first()), 'error'); @endif
         });
     </script>
+    @endif
     {{-- PWA Installation Guidance Modal --}}
     <div id="pwa-install-modal" class="hidden fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
         <div class="relative w-full max-w-md bg-slate-900 border border-slate-700/60 rounded-2xl p-6 shadow-2xl text-slate-100">
