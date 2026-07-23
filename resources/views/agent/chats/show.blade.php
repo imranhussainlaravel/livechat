@@ -403,19 +403,39 @@
             });
         }
 
-        // ---- Laravel Echo / Real-Time Events ----
-        // Reuse the global Echo set up by the layout (same config).
-        // Poll until it is ready, then attach chat-specific subscriptions.
+        // ---- Laravel Echo / Real-Time Events & Deduplication ----
         var chatId = {{ $chat->id }};
         var currentUserId = {{ auth()->id() }};
-        window._chatChannelId = chatId; // Lets the global turbo:before-render handler clean up
+
+        window._renderedMsgIds = window._renderedMsgIds || new Set();
+
+        function isDuplicateMessage(id, text) {
+            if (id && window._renderedMsgIds.has('id-' + id)) return true;
+            var key = 'txt-' + (text || '').trim();
+            if (window._renderedMsgIds.has(key)) return true;
+
+            if (id) window._renderedMsgIds.add('id-' + id);
+            window._renderedMsgIds.add(key);
+            setTimeout(function() { window._renderedMsgIds.delete(key); }, 3000);
+            return false;
+        }
 
         function setupChatEcho() {
             if (!window.Echo) { setTimeout(setupChatEcho, 80); return; }
-            var currentUserId = {{ auth()->id() }};
+
+            // Clean up any previously subscribed chat channels to avoid duplicate listener callbacks
+            if (window._activeChatChannelId) {
+                try {
+                    window.Echo.leave('chat.' + window._activeChatChannelId);
+                    window.Echo.leave('chat-room.' + window._activeChatChannelId);
+                } catch(e) {}
+            }
+            window._activeChatChannelId = chatId;
 
             window.Echo.private('chat.' + chatId)
                 .listen('.message.new', function(e) {
+                    if (e.id && isDuplicateMessage(e.id, e.message)) return;
+
                     if (e.sender_type === 'visitor') {
                         appendVisitorMessage(e.message, e.created_at);
                         if (typeof playAlertSound === 'function') playAlertSound(false);
@@ -470,6 +490,7 @@
                 });
 
             function appendSystemMessage(msg) {
+                if (isDuplicateMessage(null, msg)) return;
                 var sysHtml = '<div class="flex items-center justify-center my-1.5">' +
                     '<div class="flex items-center gap-4 w-full">' +
                     '<div class="flex-1 h-px bg-gray-800"></div>' +
@@ -481,6 +502,19 @@
                 scrollToBottom(true);
             }
         } // end setupChatEcho
+
+        // Clean up Echo channels when Turbo navigates away
+        document.addEventListener('turbo:before-render', function cleanupEchoOnTurbo() {
+            if (window._activeChatChannelId && window.Echo) {
+                try {
+                    window.Echo.leave('chat.' + window._activeChatChannelId);
+                    window.Echo.leave('chat-room.' + window._activeChatChannelId);
+                } catch(e) {}
+                window._activeChatChannelId = null;
+            }
+            document.removeEventListener('turbo:before-render', cleanupEchoOnTurbo);
+        });
+
         setupChatEcho();
     });
 </script>
