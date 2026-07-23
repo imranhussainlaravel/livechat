@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow, noarchive">
+    <title>Nexon LiveChat</title>
+    <link rel="icon" type="image/webp" href="/icons/logo.webp">
     <!-- PWA Manifest & App Metadata -->
     <meta name="theme-color" content="#6366F1">
     <meta name="apple-mobile-web-app-capable" content="yes">
