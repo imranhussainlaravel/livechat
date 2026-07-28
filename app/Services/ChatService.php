@@ -126,8 +126,10 @@ class ChatService
             return $chat;
         });
 
-        // Send WhatsApp group notification after DB commit
-        $this->whatsApp->notifyNewChat($chat);
+        // Send WhatsApp group notification after DB commit. Deferred to run
+        // after the HTTP response is sent — this is an outbound HTTP call to
+        // ntfy.sh and must never make a visitor wait on it.
+        dispatch(fn () => $this->whatsApp->notifyNewChat($chat))->afterResponse();
 
         return $chat;
     }
@@ -205,7 +207,9 @@ class ChatService
         event(new \App\Events\NewMessage($message));
 
         if ($dto->senderType === MessageSenderType::VISITOR->value) {
-            $this->whatsApp->notifyVisitorMessage($message->chat, $message->message);
+            // Deferred for the same reason as notifyNewChat() above — an
+            // outbound HTTP call must never block the visitor's response.
+            dispatch(fn () => $this->whatsApp->notifyVisitorMessage($message->chat, $message->message))->afterResponse();
 
             // While no human agent has joined yet, let the AI assistant give a
             // quick first-response. dispatchAfterResponse() runs the job in the

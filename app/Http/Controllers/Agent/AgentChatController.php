@@ -41,26 +41,34 @@ class AgentChatController extends Controller
         $activeTitle = null;
         $messages = collect();
 
+        // Initial page load only needs the most recent slice of history — capped
+        // so a long-running DM/channel thread can't turn this into an
+        // ever-growing unbounded query as it accumulates messages.
+        $historyLimit = 200;
+
         if ($request->filled('dm')) {
             $other = User::find($request->query('dm'));
             if ($other) {
                 $activeType = 'dm';
                 $activeId = (string) $other->id;
                 $activeTitle = $other->name;
-                $messages = $this->dmQuery($other->id)->with('sender')->orderBy('created_at')->get();
+                $messages = $this->dmQuery($other->id)->with('sender')->orderByDesc('created_at')->orderByDesc('id')
+                    ->limit($historyLimit)->get()->reverse()->values();
                 $this->markDmRead($other->id);
             }
         } elseif ($request->filled('channel') && isset(self::CHANNELS[$request->query('channel')])) {
             $activeType = 'group';
             $activeId = $request->query('channel');
             $activeTitle = self::CHANNELS[$activeId];
-            $messages = InternalMessage::where('channel', $activeId)->with('sender')->orderBy('created_at')->get();
+            $messages = InternalMessage::where('channel', $activeId)->with('sender')->orderByDesc('created_at')->orderByDesc('id')
+                ->limit($historyLimit)->get()->reverse()->values();
         } else {
             // Default to the General channel.
             $activeType = 'group';
             $activeId = 'general';
             $activeTitle = self::CHANNELS['general'];
-            $messages = InternalMessage::where('channel', 'general')->with('sender')->orderBy('created_at')->get();
+            $messages = InternalMessage::where('channel', 'general')->with('sender')->orderByDesc('created_at')->orderByDesc('id')
+                ->limit($historyLimit)->get()->reverse()->values();
         }
 
         // Opening a channel marks it read up to its newest message.
@@ -180,13 +188,25 @@ class AgentChatController extends Controller
 
         try {
             $meId = Auth::id();
+            $channels = array_keys(self::CHANNELS);
             $reads = ChannelRead::where('user_id', $meId)->pluck('last_read_message_id', 'channel');
 
-            foreach (array_keys(self::CHANNELS) as $key) {
-                $counts[$key] = InternalMessage::where('channel', $key)
-                    ->where('id', '>', ($reads[$key] ?? 0))
-                    ->where('sender_id', '!=', $meId)
-                    ->count();
+            // Single grouped query instead of one COUNT per channel.
+            $rows = InternalMessage::whereIn('channel', $channels)
+                ->where('sender_id', '!=', $meId)
+                ->where(function ($q) use ($channels, $reads) {
+                    foreach ($channels as $ch) {
+                        $q->orWhere(function ($qq) use ($ch, $reads) {
+                            $qq->where('channel', $ch)->where('id', '>', ($reads[$ch] ?? 0));
+                        });
+                    }
+                })
+                ->selectRaw('channel, COUNT(*) as cnt')
+                ->groupBy('channel')
+                ->pluck('cnt', 'channel');
+
+            foreach ($rows as $key => $cnt) {
+                $counts[$key] = (int) $cnt;
             }
         } catch (\Throwable $e) {
             // channel_reads not migrated yet — report zero unread.
@@ -210,27 +230,30 @@ class AgentChatController extends Controller
         $latestDm = (clone $dmBase)->with('sender')->orderByDesc('id')->first();
 
         // --- Unread group-channel messages (per-user read marker) ---
-        // Guarded so a pending migration can't 500 this poll endpoint.
+        // Guarded so a pending migration can't 500 this poll endpoint. This
+        // endpoint is polled every ~12s by every online agent, so it's kept
+        // to 2 queries total instead of 2-per-channel (count + first).
         $channelCount = 0;
         $latestChannelMsg = null;
         $latestChannelKey = null;
 
         try {
+            $channels = array_keys(self::CHANNELS);
             $reads = ChannelRead::where('user_id', $meId)->pluck('last_read_message_id', 'channel');
 
-            foreach (self::CHANNELS as $key => $label) {
-                $unread = InternalMessage::where('channel', $key)
-                    ->where('id', '>', ($reads[$key] ?? 0))
-                    ->where('sender_id', '!=', $meId);
+            $unreadChannelBase = InternalMessage::whereIn('channel', $channels)
+                ->where('sender_id', '!=', $meId)
+                ->where(function ($q) use ($channels, $reads) {
+                    foreach ($channels as $ch) {
+                        $q->orWhere(function ($qq) use ($ch, $reads) {
+                            $qq->where('channel', $ch)->where('id', '>', ($reads[$ch] ?? 0));
+                        });
+                    }
+                });
 
-                $channelCount += (clone $unread)->count();
-
-                $newest = (clone $unread)->with('sender')->orderByDesc('id')->first();
-                if ($newest && (! $latestChannelMsg || $newest->id > $latestChannelMsg->id)) {
-                    $latestChannelMsg = $newest;
-                    $latestChannelKey = $key;
-                }
-            }
+            $channelCount = (clone $unreadChannelBase)->count();
+            $latestChannelMsg = (clone $unreadChannelBase)->with('sender')->orderByDesc('id')->first();
+            $latestChannelKey = $latestChannelMsg?->channel;
         } catch (\Throwable $e) {
             // channel_reads / channel column not migrated yet — DM-only summary.
         }

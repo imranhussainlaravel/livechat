@@ -29,9 +29,18 @@ class AppServiceProvider extends ServiceProvider
         \Illuminate\Support\Facades\RateLimiter::for('chat', function (\Illuminate\Http\Request $request) {
             return \Illuminate\Cache\RateLimiting\Limit::perMinute(20)->by($request->ip());
         });
-        // Shared Data for sidebar/header (Internal Messages)
+        // Shared Data for sidebar/header (Internal Messages).
+        // Memoized with a `static` so the two views sharing this composer
+        // (sidebar + header, both rendered on every authenticated page) run
+        // this query set ONCE per request instead of twice.
         \Illuminate\Support\Facades\View::composer(['components.sidebar', 'components.header'], function ($view) {
-            if (auth()->check()) {
+            if (! auth()->check()) {
+                return;
+            }
+
+            static $data = null;
+
+            if ($data === null) {
                 $unreadAgents = \App\Models\User::whereHas('sentInternalMessages', function ($q) {
                     $q->where('receiver_id', auth()->id())->where('is_read', false);
                 })->withCount(['sentInternalMessages as unread_count' => function ($q) {
@@ -41,24 +50,35 @@ class AppServiceProvider extends ServiceProvider
                 // Group-channel unread (per-user read marker) added to the DM total
                 // so the sidebar/header badge reflects channels too. Wrapped so a
                 // pending migration (missing channel_reads table) can never 500
-                // every page — it just falls back to the DM-only count.
+                // every page — it just falls back to the DM-only count. Uses a
+                // single grouped query instead of one COUNT per channel.
                 $channelUnread = 0;
                 try {
+                    $channels = array_keys(\App\Http\Controllers\Agent\AgentChatController::CHANNELS);
                     $reads = \App\Models\ChannelRead::where('user_id', auth()->id())
                         ->pluck('last_read_message_id', 'channel');
-                    foreach (array_keys(\App\Http\Controllers\Agent\AgentChatController::CHANNELS) as $ch) {
-                        $channelUnread += \App\Models\InternalMessage::where('channel', $ch)
-                            ->where('id', '>', ($reads[$ch] ?? 0))
-                            ->where('sender_id', '!=', auth()->id())
-                            ->count();
-                    }
+
+                    $channelUnread = \App\Models\InternalMessage::whereIn('channel', $channels)
+                        ->where('sender_id', '!=', auth()->id())
+                        ->where(function ($q) use ($channels, $reads) {
+                            foreach ($channels as $ch) {
+                                $q->orWhere(function ($qq) use ($ch, $reads) {
+                                    $qq->where('channel', $ch)->where('id', '>', ($reads[$ch] ?? 0));
+                                });
+                            }
+                        })
+                        ->count();
                 } catch (\Throwable $e) {
                     $channelUnread = 0;
                 }
 
-                $view->with('unreadAgents', $unreadAgents);
-                $view->with('totalUnreadInternal', $unreadAgents->sum('unread_count') + $channelUnread);
+                $data = [
+                    'unreadAgents' => $unreadAgents,
+                    'totalUnreadInternal' => $unreadAgents->sum('unread_count') + $channelUnread,
+                ];
             }
+
+            $view->with($data);
         });
     }
 }

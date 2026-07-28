@@ -14,7 +14,6 @@ use App\Http\Requests\SendMessageRequest;
 use App\Http\Requests\TransferChatRequest;
 use App\Repositories\Contracts\ChatRepositoryInterface;
 use App\Repositories\Contracts\MessageRepositoryInterface;
-use App\Repositories\Contracts\UserRepositoryInterface;
 use App\Services\ChatService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -25,7 +24,6 @@ class ChatController extends Controller
     public function __construct(
         private ChatService $chatService,
         private ChatRepositoryInterface $chats,
-        private UserRepositoryInterface $users,
     ) {}
 
     /**
@@ -55,11 +53,15 @@ class ChatController extends Controller
         $chat = $this->chats->findWithRelations($id, ['visitor', 'agent', 'transfers', 'previousChat']);
         $messages = app(MessageRepositoryInterface::class)->getByChatId($id);
 
-        // Get available agents & admins for transfer dropdown
-        $agents = $this->users->getAgents([
-            'roles' => [\App\Enums\UserRole::AGENT, \App\Enums\UserRole::ADMIN],
-            'per_page' => 100,
-        ]);
+        // Agents & admins for the transfer dropdown. This is just a static
+        // list for a <select> (no pagination UI), so it's a plain cached
+        // query instead of a fresh paginate(100) — which runs a COUNT plus a
+        // SELECT — on every single chat opened.
+        $agents = \Illuminate\Support\Facades\Cache::remember('transfer_dropdown_agents', 60, function () {
+            return \App\Models\User::whereIn('role', [\App\Enums\UserRole::AGENT, \App\Enums\UserRole::ADMIN])
+                ->orderBy('name')
+                ->get(['id', 'name', 'role']);
+        });
 
         // Get Interaction Timeline
         $timeline = [];
@@ -67,7 +69,10 @@ class ChatController extends Controller
         // Identify the most recent previous agent who had this chat
         $previousAgentId = $chat->transfers->last()?->from_agent_id;
 
-        return view('agent.chats.show', compact('chat', 'messages', 'agents', 'timeline', 'previousAgentId'));
+        // Computed once here instead of once per bot message in the Blade loop.
+        $aiBotName = \App\Models\Setting::getValue('ai_bot_name', 'Assistant');
+
+        return view('agent.chats.show', compact('chat', 'messages', 'agents', 'timeline', 'previousAgentId', 'aiBotName'));
     }
 
     /**

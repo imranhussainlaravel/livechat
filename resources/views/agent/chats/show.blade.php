@@ -105,7 +105,7 @@
                     :isAgent="$isAgent"
                     :isBot="$isBot"
                     :isMine="$isAgent"
-                    :senderName="$isAgent ? ($msg->sender->name ?? 'User') : ($isBot ? \App\Models\Setting::getValue('ai_bot_name', 'Assistant') : ($chat->visitor->name ?? 'Visitor'))"
+                    :senderName="$isAgent ? ($msg->sender->name ?? 'User') : ($isBot ? $aiBotName : ($chat->visitor->name ?? 'Visitor'))"
                     :message="$msg->message"
                     :time="$msg->created_at->format('g:i A')"
                     :createdAtIso="$msg->created_at->toIso8601String()" />

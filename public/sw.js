@@ -38,6 +38,12 @@ self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
     if (url.pathname.startsWith('/api') || url.pathname.startsWith('/broadcasting')) return;
 
+    // Skip AJAX/JSON polling requests (e.g. /agent/alerts/poll?after=123,
+    // /agent/team/unread-summary) — each poll has a different query string,
+    // so caching these would grow the Cache Storage forever with responses
+    // that are never read back and never evicted.
+    if ((event.request.headers.get('accept') || '').includes('application/json')) return;
+
     event.respondWith(
         fetch(event.request)
             .then((response) => {

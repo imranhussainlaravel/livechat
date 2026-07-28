@@ -4,9 +4,8 @@
         ->where('status', \App\Enums\ChatStatus::PENDING)
         ->count();
 
-    $totalUnreadInternal = \App\Models\InternalMessage::where('receiver_id', auth()->id())
-        ->where('is_read', false)
-        ->count();
+    // $totalUnreadInternal comes from the shared View::composer (AppServiceProvider) —
+    // it already includes DM + channel unread and must not be recomputed here.
 @endphp
 <div id="app-sidebar" class="fixed inset-y-0 left-0 -translate-x-full transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 w-72 max-w-[85vw] lg:w-64 lg:max-w-none flex-shrink-0 bg-slate-900 lg:bg-slate-900/40 border-r border-slate-700/50 backdrop-blur-xl text-slate-300 flex flex-col shadow-2xl z-40 lg:z-20">
     <div class="h-14 flex items-center justify-between px-5 border-b border-slate-700/50">

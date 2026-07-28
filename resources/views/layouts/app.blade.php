@@ -166,12 +166,22 @@
     </div>
 
     <div id="toast-container"></div>
-    <div id="direct-alert-permission" class="hidden fixed bottom-6 left-6 z-[9999] max-w-sm rounded-lg border border-indigo-500/30 bg-slate-900/95 p-4 shadow-2xl shadow-black/40">
-        <p class="text-sm font-semibold text-slate-100">Live chat alerts are off</p>
-        <p class="mt-1 text-xs text-slate-400">Enable browser alerts and sound so new chats notify you directly.</p>
-        <button type="button" id="enable-direct-alerts" class="mt-3 inline-flex items-center rounded-md bg-[#6366F1] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#4F46E5]">
-            Enable alerts
-        </button>
+    <div id="direct-alert-permission" class="hidden fixed top-0 inset-x-0 z-[9999]">
+        <div class="mx-auto flex max-w-2xl items-center gap-3 rounded-b-xl border border-t-0 border-amber-500/40 bg-amber-950/95 px-4 py-3 shadow-2xl shadow-black/40">
+            <span class="relative flex-shrink-0 flex h-5 w-5 items-center justify-center">
+                <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-40"></span>
+                <svg class="relative w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                </svg>
+            </span>
+            <div class="flex-1 min-w-0">
+                <p class="text-sm font-semibold text-amber-50">Live chat alerts are off</p>
+                <p class="text-xs text-amber-200/80">Turn on browser alerts and sound so new messages notify you instantly, even on another tab.</p>
+            </div>
+            <button type="button" id="enable-direct-alerts" class="flex-shrink-0 inline-flex items-center rounded-md bg-amber-500 px-3 py-2 text-xs font-bold text-amber-950 transition hover:bg-amber-400">
+                Enable alerts
+            </button>
+        </div>
     </div>
 
     <script>
@@ -613,15 +623,6 @@
             }
         });
 
-        // Clean up per-chat Echo subscriptions when leaving a chat page
-        document.addEventListener('turbo:before-render', function() {
-            if (window._chatChannelId != null && window.Echo) {
-                try { window.Echo.leave('chat.' + window._chatChannelId); } catch(e) {}
-                try { window.Echo.leave('chat-room.' + window._chatChannelId); } catch(e) {}
-                window._chatChannelId = null;
-            }
-        });
-
         // Initialize Pusher Globally if Authenticated
         @if(auth()->check() && (auth()->user()->isAgent() || auth()->user()->isAdmin()))
             // var (not const) so Turbo re-running this inline script on each
@@ -848,7 +849,7 @@
             if (!window._teamPollStarted) {
                 window._teamPollStarted = true;
                 pollTeamMessages();
-                setInterval(pollTeamMessages, 12000);
+                setInterval(pollTeamMessages, 5000);
             }
         })();
     </script>
@@ -949,7 +950,7 @@
             if (!window._liveChatPollStarted) {
                 window._liveChatPollStarted = true;
                 pollLiveChat();
-                setInterval(pollLiveChat, 10000);
+                setInterval(pollLiveChat, 5000);
             }
         })();
     </script>
