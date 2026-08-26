@@ -6,83 +6,82 @@
 {{-- Page Header --}}
 <div class="flex items-center justify-between mb-6">
     <div>
-        <h1 class="text-xl font-bold text-white tracking-tight">Dashboard</h1>
-        <p class="text-xs text-slate-500 mt-0.5">{{ now()->format('l, F j Y') }} &middot; Real-time overview</p>
+        <h1 class="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+            Dashboard <span class="animate-[wave_2.5s_infinite] origin-bottom-right">👋</span>
+        </h1>
+        <p class="text-xs text-slate-500 mt-0.5">Welcome back, {{ auth()->user()->name ?? 'User' }}! Here's what's happening with your business today.</p>
     </div>
-    <span class="flex items-center gap-1.5 text-xs text-emerald-400 font-medium bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-full">
-        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0"></span>
+    <span class="flex items-center gap-1.5 text-xs text-emerald-400 font-medium bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-full shadow-sm">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0 animate-pulse"></span>
         Live
     </span>
 </div>
 
 {{-- ── 5 KPI Cards ─────────────────────────────────────────── --}}
 <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
-
-    {{-- Active Chats --}}
-    <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 hover:border-[#6366F1]/30 transition-colors group">
-        <div class="flex items-center justify-between mb-3">
-            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Active</p>
-            <div class="w-8 h-8 rounded-lg bg-[#6366F1]/10 border border-[#6366F1]/20 flex items-center justify-center group-hover:bg-[#6366F1]/20 transition-colors">
-                <svg class="w-4 h-4 text-[#6366F1]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
-            </div>
-        </div>
-        <p class="text-3xl font-extrabold text-white leading-none mb-1">{{ $stats['active_chats'] ?? 0 }}</p>
-        <p class="text-[11px] text-slate-500">Chats in progress</p>
+    <div id="dashboard-active-card" class="h-full">
+        <x-stat-card 
+            title="Active" 
+            value="{{ $stats['active_chats'] ?? 0 }}" 
+            subtitle="Chats in progress"
+            icon='<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>'
+            color="indigo"
+            trend="{{ $stats['chat_trend']['type'] ?? 'flat' }}"
+            trendValue="{{ $stats['chat_trend']['value'] ?? '0%' }}"
+            trendLabel="{{ $stats['trend_label'] ?? 'vs last 7d' }}"
+            sparkline="{{ $stats['chat_sparkline'] ?? '' }}"
+        />
     </div>
-
-    {{-- Pending Queue --}}
-    <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 hover:border-amber-500/30 transition-colors group">
-        <div class="flex items-center justify-between mb-3">
-            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Queue</p>
-            <div class="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center group-hover:bg-amber-500/20 transition-colors">
-                <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            </div>
-        </div>
-        <p class="text-3xl font-extrabold text-white leading-none mb-1">{{ $stats['pending_queue'] ?? 0 }}</p>
-        <p class="text-[11px] text-slate-500">Waiting for agent</p>
+    
+    <div id="dashboard-queue-card" class="h-full">
+        <x-stat-card 
+            title="Queue" 
+            value="{{ $stats['pending_queue'] ?? 0 }}" 
+            subtitle="Waiting for agent"
+            icon='<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>'
+            color="amber"
+            trend="flat"
+            trendValue="—"
+            trendLabel="current"
+        />
     </div>
-
-    {{-- Agents Online --}}
-    <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 hover:border-emerald-500/30 transition-colors group">
-        <div class="flex items-center justify-between mb-3">
-            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Online</p>
-            <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
-                <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-            </div>
-        </div>
-        <p class="text-3xl font-extrabold text-white leading-none mb-1">{{ $stats['agents_online'] ?? 0 }}</p>
-        <p class="text-[11px] text-slate-500">Agents available</p>
+    
+    <div id="dashboard-online-card" class="h-full">
+        <x-stat-card 
+            title="Online" 
+            value="{{ $stats['agents_online'] ?? 0 }}" 
+            subtitle="Agents available"
+            icon='<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>'
+            color="emerald"
+            trend="flat"
+            trendValue="—"
+            trendLabel="current"
+        />
     </div>
-
-    {{-- Total Today --}}
-    <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 hover:border-cyan-500/30 transition-colors group">
-        <div class="flex items-center justify-between mb-3">
-            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Today</p>
-            <div class="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center group-hover:bg-cyan-500/20 transition-colors">
-                <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-            </div>
-        </div>
-        <p class="text-3xl font-extrabold text-white leading-none mb-1">{{ $stats['total_today'] ?? 0 }}</p>
-        <p class="text-[11px] text-slate-500">Conversations started</p>
-    </div>
-
-    {{-- Resolution Rate --}}
-    @php
-        $resolved = $stats['closed_today'] ?? 0;
-        $total    = $stats['total_today']  ?? 0;
-        $rate     = $total > 0 ? round(($resolved / $total) * 100) : 0;
-    @endphp
-    <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 hover:border-violet-500/30 transition-colors group">
-        <div class="flex items-center justify-between mb-3">
-            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Resolved</p>
-            <div class="w-8 h-8 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center group-hover:bg-violet-500/20 transition-colors">
-                <svg class="w-4 h-4 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            </div>
-        </div>
-        <p class="text-3xl font-extrabold text-white leading-none mb-1">{{ $rate }}<span class="text-lg text-slate-400 font-bold">%</span></p>
-        <p class="text-[11px] text-slate-500">{{ $resolved }} of {{ $total }} closed</p>
-    </div>
-
+    
+    <x-stat-card 
+        title="Started" 
+        value="{{ $stats['period_chats'] ?? 0 }}" 
+        subtitle="Conversations started"
+        icon='<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>'
+        color="cyan"
+        trend="{{ $stats['chat_trend']['type'] ?? 'flat' }}"
+        trendValue="{{ $stats['chat_trend']['value'] ?? '0%' }}"
+        trendLabel="{{ $stats['trend_label'] ?? 'vs last 7d' }}"
+        sparkline="{{ $stats['chat_sparkline'] ?? '' }}"
+    />
+    
+    <x-stat-card 
+        title="Resolved" 
+        value="{{ $stats['resolved_percent'] ?? 0 }}%" 
+        subtitle="{{ $stats['period_resolved'] ?? 0 }} of {{ $stats['period_chats'] ?? 0 }} closed"
+        icon='<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>'
+        color="violet"
+        trend="{{ $stats['resolved_percent_trend']['type'] ?? 'flat' }}"
+        trendValue="{{ $stats['resolved_percent_trend']['value'] ?? '0%' }}"
+        trendLabel="{{ $stats['trend_label'] ?? 'vs last 7d' }}"
+        sparkline="{{ $stats['resolved_sparkline'] ?? '' }}"
+    />
 </div>
 
 {{-- ── CRM Overview ─────────────────────────────────────────── --}}
@@ -91,175 +90,86 @@
     <a href="{{ route('crm.leads.index') }}" class="text-xs font-semibold text-[#6366F1] hover:text-[#818CF8]">Open CRM &rarr;</a>
 </div>
 <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
-    <a href="{{ route('crm.leads.index') }}" class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 hover:border-[#6366F1]/30 transition-colors group">
-        <div class="flex items-center justify-between mb-3">
-            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Open Leads</p>
-            <div class="w-8 h-8 rounded-lg bg-[#6366F1]/10 border border-[#6366F1]/20 flex items-center justify-center">
-                <svg class="w-4 h-4 text-[#6366F1]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L14 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 018 21v-7.586L3.293 6.707A1 1 0 013 6V4z"/></svg>
-            </div>
-        </div>
-        <p class="text-3xl font-extrabold text-white leading-none mb-1">{{ $crm['leads_open'] ?? 0 }}</p>
-        <p class="text-[11px] text-slate-500">of {{ $crm['leads_total'] ?? 0 }} total</p>
-    </a>
+    <x-stat-card 
+        title="Open Leads" 
+        value="{{ $crm['leads_open'] ?? 0 }}" 
+        subtitle="of {{ $crm['leads_total'] ?? 0 }} total"
+        icon='<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L14 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 018 21v-7.586L3.293 6.707A1 1 0 013 6V4z"/>'
+        color="indigo"
+        href="{{ route('crm.leads.index') }}"
+        trend="flat"
+        trendValue="—"
+        trendLabel="current"
+    />
 
-    <a href="{{ route('crm.deals.index') }}" class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 hover:border-sky-500/30 transition-colors group">
-        <div class="flex items-center justify-between mb-3">
-            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Open Deals</p>
-            <div class="w-8 h-8 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center">
-                <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
-            </div>
-        </div>
-        <p class="text-3xl font-extrabold text-white leading-none mb-1">{{ $crm['deals_open'] ?? 0 }}</p>
-        <p class="text-[11px] text-slate-500">In pipeline</p>
-    </a>
+    <x-stat-card 
+        title="Open Deals" 
+        value="{{ $crm['deals_open'] ?? 0 }}" 
+        subtitle="In pipeline"
+        icon='<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>'
+        color="sky"
+        href="{{ route('crm.deals.index') }}"
+        trend="flat"
+        trendValue="—"
+        trendLabel="current"
+    />
 
-    <a href="{{ route('crm.deals.index') }}" class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 hover:border-amber-500/30 transition-colors group">
-        <div class="flex items-center justify-between mb-3">
-            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Pipeline</p>
-            <div class="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
-                <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V6m0 12v-2m0 2c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            </div>
-        </div>
-        <p class="text-2xl font-extrabold text-white leading-none mb-1">PKR {{ number_format($crm['pipeline_value'] ?? 0, 0) }}</p>
-        <p class="text-[11px] text-slate-500">Open deal value</p>
-    </a>
+    <x-stat-card 
+        title="Pipeline" 
+        value="PKR {{ number_format($crm['pipeline_value'] ?? 0, 0) }}" 
+        subtitle="Open deal value"
+        icon='<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V6m0 12v-2m0 2c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>'
+        color="amber"
+        href="{{ route('crm.deals.index') }}"
+        trend="flat"
+        trendValue="—"
+        trendLabel="current"
+    />
 
-    <a href="{{ route('crm.deals.index') }}" class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 hover:border-emerald-500/30 transition-colors group">
-        <div class="flex items-center justify-between mb-3">
-            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Won</p>
-            <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            </div>
-        </div>
-        <p class="text-3xl font-extrabold text-emerald-400 leading-none mb-1">{{ $crm['deals_won'] ?? 0 }}</p>
-        <p class="text-[11px] text-slate-500">PKR {{ number_format($crm['won_value'] ?? 0, 0) }}</p>
-    </a>
+    <x-stat-card 
+        title="Won" 
+        value="{{ $crm['deals_won'] ?? 0 }}" 
+        subtitle="PKR {{ number_format($crm['won_value'] ?? 0, 0) }}"
+        icon='<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>'
+        color="emerald"
+        href="{{ route('crm.deals.index') }}"
+        trend="flat"
+        trendValue="—"
+        trendLabel="period"
+    />
 
-    <a href="{{ route('crm.orders.index') }}" class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 hover:border-violet-500/30 transition-colors group">
-        <div class="flex items-center justify-between mb-3">
-            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Active Orders</p>
-            <div class="w-8 h-8 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
-                <svg class="w-4 h-4 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-            </div>
-        </div>
-        <p class="text-3xl font-extrabold text-white leading-none mb-1">{{ $crm['orders_active'] ?? 0 }}</p>
-        <p class="text-[11px] text-slate-500">Not yet delivered</p>
-    </a>
+    <x-stat-card 
+        title="Active Orders" 
+        value="{{ $crm['orders_active'] ?? 0 }}" 
+        subtitle="Not yet delivered"
+        icon='<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>'
+        color="violet"
+        href="{{ route('crm.orders.index') }}"
+        trend="flat"
+        trendValue="—"
+        trendLabel="current"
+    />
 </div>
 
-{{-- ── Chart + Agents ───────────────────────────────────────── --}}
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-
-    {{-- Chart --}}
-    <div class="lg:col-span-2 bg-slate-800/50 border border-slate-700/50 rounded-xl p-5 flex flex-col">
-        <div class="flex items-center justify-between mb-5">
-            <div>
-                <h3 class="text-sm font-bold text-slate-200">Chat Volume</h3>
-                <p class="text-[11px] text-slate-500 mt-0.5">Last 7 days</p>
-            </div>
-            <div class="flex items-center gap-1.5 text-[11px] text-[#6366F1] font-semibold bg-[#6366F1]/10 border border-[#6366F1]/20 px-2.5 py-1 rounded-full">
-                <span class="w-1.5 h-1.5 rounded-full bg-[#6366F1]"></span>
-                Chats
-            </div>
-        </div>
-        <div class="relative flex-1 min-h-[260px]">
-            <canvas id="chatVolumeChart"></canvas>
-        </div>
-    </div>
-
-    {{-- Active Agents --}}
-    <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl overflow-hidden flex flex-col">
-        <div class="px-5 py-3.5 border-b border-slate-700/50 flex items-center justify-between">
-            <h3 class="text-sm font-bold text-slate-200">Agents</h3>
-            <a href="{{ route('admin.agents.index') }}" class="text-xs font-semibold text-[#6366F1] hover:underline">
-                View all →
-            </a>
-        </div>
-        <div class="flex-1 overflow-y-auto divide-y divide-slate-700/40">
-            @forelse($agents as $agent)
-            <div class="flex items-center gap-3 px-5 py-3 hover:bg-slate-700/30 transition-colors">
-                <div class="relative flex-shrink-0">
-                    <div class="w-8 h-8 rounded-lg bg-slate-700 border border-slate-600 flex items-center justify-center text-xs font-bold text-slate-300">
-                        {{ strtoupper(substr($agent->name, 0, 1)) }}
-                    </div>
-                    <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-slate-800 {{ $agent->status === 'online' ? 'bg-emerald-400' : ($agent->status === 'away' ? 'bg-amber-400' : 'bg-slate-500') }}"></span>
-                </div>
-                <div class="flex-1 min-w-0">
-                    <p class="text-xs font-semibold text-slate-200 truncate">{{ $agent->name }}</p>
-                    <p class="text-[10px] text-slate-500">{{ $agent->assigned_chats_count ?? 0 }}/{{ $agent->max_chats ?? 5 }} chats</p>
-                </div>
-                <span class="text-[10px] font-bold uppercase tracking-wide {{ $agent->status === 'online' ? 'text-emerald-400' : ($agent->status === 'away' ? 'text-amber-400' : 'text-slate-500') }}">
-                    {{ $agent->status ?? 'offline' }}
-                </span>
-            </div>
-            @empty
-            <div class="px-5 py-8 text-center text-xs text-slate-500">No agents found</div>
-            @endforelse
-        </div>
-    </div>
-
+{{-- ── Analytics Widgets ───────────────────────────────────────── --}}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+    <x-dashboard.line-chart :graphData="$graphData" />
+    <x-dashboard.donut-chart :chatVolume="$chatVolume" />
 </div>
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const ctx = document.getElementById('chatVolumeChart').getContext('2d');
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+    <x-dashboard.funnel-chart :funnelData="$funnelData" />
+    <x-dashboard.agent-performance-list :agents="$agents" />
+    <x-dashboard.recent-chats-list :recentChats="$recentChats" />
+</div>
 
-        let gradient = ctx.createLinearGradient(0, 0, 0, 300);
-        gradient.addColorStop(0, 'rgba(99, 102, 241, 0.25)');
-        gradient.addColorStop(1, 'rgba(99, 102, 241, 0)');
-
-        const data = @json($graphData);
-
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: data.labels,
-                datasets: [{
-                    label: 'Chats',
-                    data: data.values,
-                    borderColor: '#6366F1',
-                    backgroundColor: gradient,
-                    borderWidth: 2,
-                    pointBackgroundColor: '#6366F1',
-                    pointBorderColor: '#0f172a',
-                    pointBorderWidth: 2,
-                    pointRadius: 4,
-                    pointHoverRadius: 6,
-                    fill: true,
-                    tension: 0.4,
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: '#1e293b',
-                        titleColor: '#f1f5f9',
-                        bodyColor: '#94a3b8',
-                        borderColor: '#334155',
-                        borderWidth: 1,
-                        padding: 10,
-                        usePointStyle: true,
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: { color: 'rgba(51,65,85,0.4)', drawBorder: false },
-                        border: { display: false },
-                        ticks: { color: '#475569', stepSize: 1, padding: 8, font: { size: 11 } }
-                    },
-                    x: {
-                        grid: { display: false },
-                        border: { display: false },
-                        ticks: { color: '#475569', padding: 8, font: { size: 11 } }
-                    }
-                }
-            }
-        });
-    });
-</script>
+<style>
+    @keyframes wave {
+        0%, 100% { transform: rotate(0deg); }
+        25% { transform: rotate(15deg); }
+        50% { transform: rotate(-10deg); }
+        75% { transform: rotate(15deg); }
+    }
+</style>
 
 @endsection

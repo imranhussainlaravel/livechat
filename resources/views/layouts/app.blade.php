@@ -477,6 +477,15 @@
                     badge.classList.add('hidden');
                 }
             });
+
+            // Update dashboard queue stat card if on dashboard
+            var dbQueue = document.querySelector('#dashboard-queue-card .text-3xl');
+            if (dbQueue) {
+                dbQueue.textContent = count;
+                dbQueue.style.transition = 'transform 0.3s ease';
+                dbQueue.style.transform = 'scale(1.05)';
+                setTimeout(function() { dbQueue.style.transform = ''; }, 300);
+            }
         }
 
         // Auto-clear unread when viewing a specific chat page
