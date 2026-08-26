@@ -26,7 +26,7 @@
             $email = $chat->visitor->email ?? 'Unknown contact';
             $message = $chat->subject ?? 'No subject';
         @endphp
-        <div class="flex items-start gap-4 px-5 py-4 hover:bg-slate-700/30 transition-colors group cursor-pointer" onclick="window.location='{{ route('admin.chats.show', $chat->id) }}'">
+        <div class="flex items-start gap-4 px-5 py-4 hover:bg-slate-700/30 transition-colors group cursor-pointer" onclick="window.location='{{ route('agent.chats.show', $chat->id) }}'">
             <div class="w-10 h-10 rounded-xl bg-{{ $color }}-500/10 border border-{{ $color }}-500/20 flex items-center justify-center text-{{ $color }}-400 shrink-0 mt-0.5">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     {!! $icon !!}
